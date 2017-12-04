@@ -1,0 +1,7 @@
+<resources>
+    <!--弹出对话框动画-->
+    <style name="dialogWindowAnim" parent="android:Animation">
+        <item name="android:windowEnterAnimation">@anim/pop_view_in_anim</item>
+        <item name="android:windowExitAnimation">@anim/pop_view_out_anim</item>
+    </style>
+</resources>
