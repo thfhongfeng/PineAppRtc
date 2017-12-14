@@ -23,7 +23,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name">
         <activity
-            android:name=".ui.activity.ConnectActivity"
+            android:name=".org.component.ConnectActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan">
@@ -47,11 +47,11 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.activity.SettingsActivity"
+            android:name=".org.component.SettingsActivity"
             android:label="@string/settings_name"
             android:screenOrientation="portrait" />
         <activity
-            android:name=".ui.activity.CallActivity"
+            android:name=".org.component.CallActivity"
             android:configChanges="orientation|screenSize"
             android:label="@string/app_name"
             android:screenOrientation="portrait"

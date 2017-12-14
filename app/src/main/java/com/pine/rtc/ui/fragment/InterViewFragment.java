@@ -12,7 +12,6 @@ package com.pine.rtc.ui.fragment;
 
 import android.app.Activity;
 import android.app.Fragment;
-import android.media.MediaFormat;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,11 +20,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.pine.rtc.R;
-import com.pine.rtc.component.MediaCodecVideoEncoder;
-import com.pine.rtc.controller.AppRTCAudioManager;
-import com.pine.rtc.ui.activity.CallActivity;
-
-import java.util.Set;
+import com.pine.rtc.org.component.CallActivity;
 
 /**
  * Fragment for call control.
@@ -112,8 +107,8 @@ public class InterViewFragment extends Fragment {
         mCallEvents = (OnCallEvents) activity;
     }
 
-    public void enableSupportButtons(boolean isSupportCaptureScreen) {
-        if (MediaCodecVideoEncoder.isDeviceSupportRecorder(MediaFormat.MIMETYPE_VIDEO_AVC)) {
+    public void enableSupportButtons(boolean isSupportCaptureScreen, boolean isSupportMediaRecord) {
+        if (isSupportMediaRecord) {
             recordVideoButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -135,6 +130,13 @@ public class InterViewFragment extends Fragment {
             });
             captureScreenButton.setAlpha(1.0f);
         }
+    }
+
+    public void onRecorderChange(boolean isRecording) {
+        if (recordVideoButton == null) {
+            return;
+        }
+        recordVideoButton.setSelected(isRecording);
     }
 
     public void onSpeakerChange(boolean isOn) {
