@@ -1,9 +1,6 @@
-package com.pine.rtc.service;
+package com.pine.rtc.controller;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
@@ -12,7 +9,6 @@ import android.hardware.display.VirtualDisplay;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
@@ -20,12 +16,12 @@ import android.os.Handler;
 import android.os.SystemClock;
 import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 
 /**
@@ -36,47 +32,66 @@ public class MediaProjectionScreenShot {
 
     private static final String TAG = MediaProjectionScreenShot.class.getSimpleName();
 
-    private final SoftReference<Context> mRefContext;
+    private static MediaProjectionScreenShot mInstance;
     private ImageReader mImageReader;
     private MediaProjection mMediaProjection;
     private VirtualDisplay mVirtualDisplay;
     private String mLocalUrl = "";
+    private int mDensityDpi;
+    private int mWidth;
+    private int mHeight;
     private OnShotListener mOnShotListener;
 
-    public MediaProjectionScreenShot(Context context, Intent data) {
-        this.mRefContext = new SoftReference<>(context);
-        mMediaProjection = getMediaProjectionManager().getMediaProjection(Activity.RESULT_OK,
-                data);
+    public static synchronized MediaProjectionScreenShot getInstance() {
+        if (mInstance == null) {
+            mInstance = new MediaProjectionScreenShot();
+        }
+        return mInstance;
+    }
+
+    private MediaProjectionScreenShot() {
+        DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
+        mDensityDpi = displayMetrics.densityDpi;
+        mWidth = displayMetrics.widthPixels;
+        mHeight = displayMetrics.heightPixels;
+    }
+
+    public MediaProjectionScreenShot setupScreenShot(OnShotListener onShotListener, MediaProjection mp) {
+        return this.setupScreenShot(onShotListener, mp, mDensityDpi, mWidth, mHeight);
+    }
+
+    public MediaProjectionScreenShot setupScreenShot(OnShotListener onShotListener, MediaProjection mp,
+                                int densityDpi, int width, int height) {
+        mMediaProjection = mp;
+        mOnShotListener = onShotListener;
+        mDensityDpi = densityDpi;
+        mWidth = width;
+        mHeight = height;
         mImageReader = ImageReader.newInstance(
-                getScreenWidth(),
-                getScreenHeight(),
+                mWidth,
+                mHeight,
                 PixelFormat.RGBA_8888,
                 1);
+        setupVirtualDisplay();
+        return mInstance;
     }
 
     private void setupVirtualDisplay() {
         mVirtualDisplay = mMediaProjection.createVirtualDisplay("screen-mirror",
-                getScreenWidth(),
-                getScreenHeight(),
-                Resources.getSystem().getDisplayMetrics().densityDpi,
+                mWidth, mHeight, mDensityDpi,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
                 mImageReader.getSurface(), null, null);
     }
 
-    public void setupScreenShot(OnShotListener onShotListener, String loc_url) {
-        mLocalUrl = loc_url;
-        setupScreenShot(onShotListener);
-    }
-
-    public void setupScreenShot(OnShotListener onShotListener) {
-        mOnShotListener = onShotListener;
-        setupVirtualDisplay();
-    }
-
     public void startScreenShot() {
+        startScreenShot(mLocalUrl);
+    }
+
+    public void startScreenShot(String loc_url) {
         if (mVirtualDisplay == null) {
             setupVirtualDisplay();
         }
+        mLocalUrl = loc_url;
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -103,31 +118,17 @@ public class MediaProjectionScreenShot {
         }, 50);
     }
 
-    public void release() {
+    public void release(boolean destroy) {
         if (mVirtualDisplay != null) {
             mVirtualDisplay.release();
             mVirtualDisplay = null;
         }
+        if (destroy) {
+            mMediaProjection = null;
+        }
     }
 
-    private MediaProjectionManager getMediaProjectionManager() {
-        return (MediaProjectionManager) getContext().getSystemService(
-                Context.MEDIA_PROJECTION_SERVICE);
-    }
-
-    private Context getContext() {
-        return mRefContext.get();
-    }
-
-    private int getScreenWidth() {
-        return Resources.getSystem().getDisplayMetrics().widthPixels;
-    }
-
-    private int getScreenHeight() {
-        return Resources.getSystem().getDisplayMetrics().heightPixels;
-    }
-
-    // a  call back listener
+    // call back listener
     public interface OnShotListener {
         void onFinish(Bitmap bitmap);
         void onSaveFinish(String filePath);

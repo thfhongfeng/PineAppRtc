@@ -1,4 +1,4 @@
-package com.pine.rtc.service;
+package com.pine.rtc.controller;
 
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
@@ -12,6 +12,7 @@ import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
 
 import org.webrtc.EglRenderer;
+import org.webrtc.Logging;
 import org.webrtc.SurfaceViewRenderer;
 
 import java.io.File;
@@ -24,13 +25,14 @@ import java.io.IOException;
  */
 
 public class EglRenderScreenShot {
+    private static final String TAG = EglRenderScreenShot.class.getSimpleName();
 
     private static EglRenderScreenShot mInstance;
 
     private SurfaceViewRenderer mScreenShotRender;
     private String mFilePath;
     private Handler mHandler;
-    private Callback mCallback;
+    private OnShotListener mOnShotListener;
 
     private EglRenderer.FrameListener mRenderFrameListener = new EglRenderer.FrameListener() {
 
@@ -41,8 +43,8 @@ public class EglRenderScreenShot {
                 public void run() {
                     if (mScreenShotRender != null) {
                         mScreenShotRender.removeFrameListener(mRenderFrameListener);
-                        if (mCallback != null) {
-                            mCallback.onScreenShot(bitmap);
+                        if (mOnShotListener != null) {
+                            mOnShotListener.onScreenShot(bitmap);
                         }
                         AsyncTaskCompat.executeParallel(new SaveTask(), bitmap);
                     }
@@ -55,26 +57,37 @@ public class EglRenderScreenShot {
 
     }
 
-    public static synchronized EglRenderScreenShot getInstance(
-            SurfaceViewRenderer surfaceViewRenderer, String filePath, Callback callback, Handler handler) {
+    public static synchronized EglRenderScreenShot getInstance() {
         if (mInstance == null) {
             mInstance = new EglRenderScreenShot();
         }
+        return mInstance;
+    }
+
+    public EglRenderScreenShot setupScreenShot(SurfaceViewRenderer surfaceViewRenderer, OnShotListener listener, Handler handler) {
         if (surfaceViewRenderer == null) {
+            Logging.d(TAG, "surfaceViewRenderer is null, return");
             return null;
         }
-        mInstance.mFilePath = filePath;
-        mInstance.mScreenShotRender = surfaceViewRenderer;
+        mScreenShotRender = surfaceViewRenderer;
         if (handler == null) {
-            mInstance.mHandler = new Handler(Looper.getMainLooper());
+            mHandler = new Handler(Looper.getMainLooper());
         } else {
-            mInstance.mHandler = handler;
+            mHandler = handler;
         }
-        mInstance.mCallback = callback;
+        mOnShotListener = listener;
         return mInstance;
     }
 
     public void screenShot() {
+        this.screenShot(mFilePath);
+    }
+
+    public void screenShot(String filePath) {
+        if (mScreenShotRender == null) {
+            return;
+        }
+        mFilePath = filePath;
         mScreenShotRender.removeFrameListener(mRenderFrameListener);
         mScreenShotRender.addFrameListener(mRenderFrameListener, 1.0f);
     }
@@ -87,7 +100,7 @@ public class EglRenderScreenShot {
                 return null;
             }
             Bitmap bitmap = params[0];
-            mFilePath = saveBitMap(bitmap, mFilePath);
+            mFilePath = saveBitMap(bitmap);
             return mFilePath;
         }
 
@@ -95,26 +108,25 @@ public class EglRenderScreenShot {
         @Override
         protected void onPostExecute(String filePath) {
             super.onPostExecute(filePath);
-            if (mCallback != null) {
-                mCallback.onScreenShotSave(filePath);
+            if (mOnShotListener != null) {
+                mOnShotListener.onScreenShotSave(filePath);
             }
         }
     }
 
-    private String saveBitMap(Bitmap bitmap, String filePath) {
-        String fileImagePath = null;
+    private String saveBitMap(Bitmap bitmap) {
         if (bitmap != null) {
             try {
-                if (TextUtils.isEmpty(filePath)) {
-                    fileImagePath = Environment.getExternalStorageDirectory().getPath()
+                if (TextUtils.isEmpty(mFilePath)) {
+                    mFilePath = Environment.getExternalStorageDirectory().getPath()
                             + "/rtc/" +
                             SystemClock.currentThreadTimeMillis() + ".png";
                 }
-                File file = new File(fileImagePath.substring(0, fileImagePath.lastIndexOf("/")));
+                File file = new File(mFilePath.substring(0, mFilePath.lastIndexOf("/")));
                 if (!file.exists()) {
                     file.mkdir();
                 }
-                File fileImage = new File(fileImagePath);
+                File fileImage = new File(mFilePath);
                 if (!fileImage.exists()) {
                     fileImage.createNewFile();
                 }
@@ -126,16 +138,16 @@ public class EglRenderScreenShot {
                 }
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
-                fileImagePath = null;
+                mFilePath = null;
             } catch (IOException e) {
                 e.printStackTrace();
-                fileImagePath = null;
+                mFilePath = null;
             }
         }
-        return fileImagePath;
+        return mFilePath;
     }
 
-    public static interface Callback {
+    public static interface OnShotListener {
         void onScreenShot(Bitmap bitmap);
         void onScreenShotSave(String filePath);
     }

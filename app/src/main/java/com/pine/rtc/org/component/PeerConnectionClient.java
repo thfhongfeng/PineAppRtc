@@ -40,9 +40,9 @@ import org.webrtc.VideoSource;
 import org.webrtc.VideoTrack;
 import org.webrtc.voiceengine.WebRtcAudioManager;
 
-import com.pine.rtc.org.lib.WebRtcAudioRecord;
-import com.pine.rtc.org.lib.WebRtcAudioRecord.AudioRecordStartErrorCode;
-import com.pine.rtc.org.lib.WebRtcAudioRecord.WebRtcAudioRecordErrorCallback;
+import org.webrtc.voiceengine.WebRtcAudioRecord;
+import org.webrtc.voiceengine.WebRtcAudioRecord.AudioRecordStartErrorCode;
+import org.webrtc.voiceengine.WebRtcAudioRecord.WebRtcAudioRecordErrorCallback;
 import org.webrtc.voiceengine.WebRtcAudioTrack;
 import org.webrtc.voiceengine.WebRtcAudioTrack.WebRtcAudioTrackErrorCallback;
 import org.webrtc.voiceengine.WebRtcAudioUtils;
@@ -557,6 +557,10 @@ public class PeerConnectionClient {
 
         // Create audio constraints.
         mAudioConstraints = new MediaConstraints();
+        mAudioConstraints.mandatory.add(
+                new MediaConstraints.KeyValuePair(AUDIO_NOISE_SUPPRESSION_CONSTRAINT, "true"));
+        mAudioConstraints.mandatory.add(
+                new MediaConstraints.KeyValuePair(AUDIO_ECHO_CANCELLATION_CONSTRAINT, "true"));
         // added for audio performance measurements
         if (mPeerConnectionParameters.noAudioProcessing) {
             Log.d(TAG, "Disabling audio processing");

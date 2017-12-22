@@ -9,13 +9,14 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.Window;
 import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.pine.rtc.R;
 
 public class VideoPlayerActivity extends Activity implements MediaPlayer.OnBufferingUpdateListener,
-        MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, TextureView.SurfaceTextureListener  {
+        MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, TextureView.SurfaceTextureListener {
 
     private static final String TAG = "VideoPlayerActivity";
 
@@ -33,13 +34,14 @@ public class VideoPlayerActivity extends Activity implements MediaPlayer.OnBuffe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_video_player);
         mVideoUrl = Environment.getExternalStorageDirectory().getPath() + "/rtc/room.mp4";
         mTextureView = (TextureView) findViewById(R.id.surface);
         mTextureView.setSurfaceTextureListener(this);
-        mTextureView.setRotation(270);
-        mTextureView.setScaleX(1280f/720);
-        mTextureView.setScaleY(720f/1280);
+//        mTextureView.setRotation(270);
+//        mTextureView.setScaleX(1280f/720);
+//        mTextureView.setScaleY(720f/1280);
     }
 
     private void playVideo(SurfaceTexture surfaceTexture) {
@@ -58,7 +60,7 @@ public class VideoPlayerActivity extends Activity implements MediaPlayer.OnBuffe
             mMediaPlayer = new MediaPlayer();
             mMediaPlayer.setDataSource(mVideoUrl);
             if (mSurf == null) {
-                mSurf = new Surface (surfaceTexture);
+                mSurf = new Surface(surfaceTexture);
             }
             mMediaPlayer.setSurface(mSurf);
             mMediaPlayer.prepareAsync();

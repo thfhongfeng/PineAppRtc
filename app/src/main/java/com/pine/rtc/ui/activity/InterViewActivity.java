@@ -26,17 +26,15 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import com.pine.rtc.R;
+import com.pine.rtc.controller.MediaProjectionScreenShot;
+import com.pine.rtc.controller.MediaRecordController;
 import com.pine.rtc.org.component.AppRTCAudioManager;
 import com.pine.rtc.org.component.AppRTCClient;
 import com.pine.rtc.org.component.DirectRTCClient;
-import com.pine.rtc.service.MediaProjectionScreenShot;
-import com.pine.rtc.service.MediaRecordService;
-import com.pine.rtc.service.MediaRecorderService;
 import com.pine.rtc.org.component.PeerConnectionClient;
-import com.pine.rtc.service.ScreenRecorderService;
 import com.pine.rtc.org.component.UnhandledExceptionHandler;
-import com.pine.rtc.org.lib.VideoFileRenderer;
 import com.pine.rtc.org.component.WebSocketRTCClient;
+import com.pine.rtc.org.lib.VideoFileRenderer;
 import com.pine.rtc.ui.fragment.InterViewFragment;
 import com.pine.rtc.util.DialogUtil;
 
@@ -65,8 +63,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     // List of mandatory application permissions.
     private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
             "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
-    private static final int SCREEN_SHOT_REQUEST_CODE = 1;
-    private static final int MEDIA_RECORD_REQUEST_CODE = 2;
+    private static final int MEDIA_PROJECTION_REQUEST_CODE = 1;
 
     // Peer connection statistics callback period in ms.
     private static final int STAT_CALLBACK_PERIOD = 1000;
@@ -75,6 +72,8 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     private final ProxyRenderer mLocalProxyRender = new ProxyRenderer();
     private final List<VideoRenderer.Callbacks> mRemoteRenders =
             new ArrayList<VideoRenderer.Callbacks>();
+    //    MediaRecorderController mMediaRecorderController;
+    MediaRecordController mMediaRecordController;
     private PeerConnectionClient mPeerConnectionClient = null;
     private AppRTCClient mAppRtcClient;
     private AppRTCClient.SignalingParameters mSignalingParameters;
@@ -99,13 +98,11 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     private boolean mIsSwappedFeeds;
     // Controls
     private InterViewFragment mInterViewFragment;
-
     private String mRoomId;
     private boolean mIsRecording;
+    private MediaProjection mMediaProjection;
     private MediaProjectionScreenShot mMediaProjectionScreenShot;
-    private MediaRecordService mMediaRecordService;
     private String mRemoteVideoFilePath;
-
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -225,7 +222,10 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         mPeerConnectionClient = PeerConnectionClient.getInstance();
         mPeerConnectionClient.createPeerConnectionFactory(
                 getApplicationContext(), mPeerConnectionParameters, InterViewActivity.this);
-
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mMediaRecordController = MediaRecordController.getInstance();
+            mMediaRecordController.onCreate();
+        }
         startCall();
     }
 
@@ -240,48 +240,60 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == SCREEN_SHOT_REQUEST_CODE) {
-            if (resultCode == RESULT_OK && data != null) {
-                mMediaProjectionScreenShot =
-                        new MediaProjectionScreenShot(InterViewActivity.this, data);
-                mMediaProjectionScreenShot.setupScreenShot(new MediaProjectionScreenShot.OnShotListener() {
-                    @Override
-                    public void onFinish(Bitmap bitmap) {
-                        DialogUtil.popShotScreenDialog(InterViewActivity.this, bitmap);
+        if (requestCode == MEDIA_PROJECTION_REQUEST_CODE) {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                if (resultCode == RESULT_OK && data != null) {
+                    if (mMediaProjection == null) {
+                        mMediaProjection = ((MediaProjectionManager) getSystemService(
+                                Context.MEDIA_PROJECTION_SERVICE)).getMediaProjection(resultCode, data);
                     }
-
-                    @Override
-                    public void onSaveFinish(String filePath) {
-                        String msg = "截图已经保存在 " + filePath;
-                        Toast.makeText(InterViewActivity.this, msg, Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        } else if (requestCode == MEDIA_RECORD_REQUEST_CODE) {
-            if (resultCode == RESULT_OK && data != null &&
-                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                MediaProjection mediaProjection = ((MediaProjectionManager) getSystemService(
-                        Context.MEDIA_PROJECTION_SERVICE)).getMediaProjection(resultCode, data);
-                if (mediaProjection == null) {
-                    Log.e(TAG, "media projection is null");
+                    setupMediaProjectionScreenShot();
+                    setupMediaRecordController();
+                    mInterViewFragment.enableSupportButtons(true, true);
                     return;
                 }
-                File file = new File(Environment.getExternalStorageDirectory().getPath() + "/rtc");
-                if (!file.exists()) {
-                    file.mkdir();
-                }
-                mRemoteVideoFilePath = Environment.getExternalStorageDirectory().getPath() + "/rtc/room.mp4";
-                DisplayMetrics displayMetrics = getDisplayMetrics();
-//                mScreenRecorderService = new ScreenRecorderService(displayMetrics.widthPixels, displayMetrics.heightPixels, 6000000,
-//                        mediaProjection, mRemoteVideoFilePath);
-                mMediaRecorderService = new MediaRecorderService(displayMetrics.widthPixels, displayMetrics.heightPixels, 512 * 1000, displayMetrics.densityDpi,
-                        mediaProjection, mRemoteVideoFilePath);
             }
+            mInterViewFragment.enableSupportButtons(false, false);
+            return;
         }
     }
 
-    ScreenRecorderService mScreenRecorderService;
-    MediaRecorderService mMediaRecorderService;
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void setupMediaProjectionScreenShot() {
+        if (mMediaProjectionScreenShot == null && mMediaProjection != null) {
+            mMediaProjectionScreenShot = MediaProjectionScreenShot.getInstance().setupScreenShot(
+                    new MediaProjectionScreenShot.OnShotListener() {
+                        @Override
+                        public void onFinish(Bitmap bitmap) {
+                            DialogUtil.popShotScreenDialog(InterViewActivity.this, bitmap);
+                        }
+
+                        @Override
+                        public void onSaveFinish(String filePath) {
+                            String msg = "截图已经保存在 " + filePath;
+                            Toast.makeText(InterViewActivity.this, msg, Toast.LENGTH_SHORT).show();
+                        }
+                    }, mMediaProjection);
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void setupMediaRecordController() {
+        if (mMediaRecordController != null && mMediaProjection != null) {
+            File file = new File(Environment.getExternalStorageDirectory().getPath() + "/rtc");
+            if (!file.exists()) {
+                file.mkdir();
+            }
+            mRemoteVideoFilePath = Environment.getExternalStorageDirectory().getPath() + "/rtc/room.mp4";
+            mMediaRecordController.setupController(new MediaRecordController.OnRecordListener() {
+                @Override
+                public void onFinish(String filePath) {
+
+                }
+            }, mMediaProjection);
+        }
+    }
+
     private boolean useCamera2() {
         return Camera2Enumerator.isSupported(this);
     }
@@ -358,7 +370,12 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         mActivityRunning = false;
         mRootEglBase.release();
         if (mMediaProjectionScreenShot != null) {
-            mMediaProjectionScreenShot.release();
+            mMediaProjectionScreenShot.release(true);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (mMediaRecordController != null) {
+                mMediaRecordController.release(true);
+            }
         }
         super.onDestroy();
     }
@@ -402,7 +419,13 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         // Enable statistics callback.
         mPeerConnectionClient.enableStatsEvents(true, STAT_CALLBACK_PERIOD);
         setSwappedFeeds(false /* mIsSwappedFeeds */);
-        mInterViewFragment.enableSupportButtons(setupScreenCapture(), setupMediaRecorder());
+        requestMediaProjection();
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                onToggleSpeaker();
+            }
+        });
 //        if (MediaCodecVideoEncoderUtil.isDeviceSupportRecorder(MediaFormat.MIMETYPE_VIDEO_AVC)) {
 //            File file = new File(Environment.getExternalStorageDirectory().getPath() + "/rtc");
 //            if (!file.exists()) {
@@ -581,7 +604,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
 //        SurfaceViewRenderer renderer = mRemoteProxyRender.getTarget();
 //        if (renderer != null) {
-//            EglRenderScreenShot.getInstance(renderer, null, new EglRenderScreenShot.Callback() {
+//            EglRenderScreenShot.getInstance().setupScreenShot(renderer, new EglRenderScreenShot.OnShotListener() {
 //                @Override
 //                public void onScreenShot(Bitmap bitmap) {
 //                    DialogUtil.popShotScreenDialog(InterViewActivity.this, bitmap);
@@ -598,28 +621,16 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 //        }
     }
 
-    private boolean setupScreenCapture() {
+    private boolean requestMediaProjection() {
         if (Build.VERSION.SDK_INT >= 21) {
             startActivityForResult(
                     ((MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE))
-                            .createScreenCaptureIntent(), SCREEN_SHOT_REQUEST_CODE);
-            return true;
+                            .createScreenCaptureIntent(), MEDIA_PROJECTION_REQUEST_CODE);
         } else {
-            Toast.makeText(InterViewActivity.this, "版本过低，截屏功能无法实现", Toast.LENGTH_LONG).show();
+            Toast.makeText(InterViewActivity.this, "版本过低，截屏录像功能无法实现", Toast.LENGTH_LONG).show();
             return false;
         }
-    }
-
-    private boolean setupMediaRecorder() {
-        if (Build.VERSION.SDK_INT >= 21) {
-            startActivityForResult(
-                    ((MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE))
-                            .createScreenCaptureIntent(), MEDIA_RECORD_REQUEST_CODE);
-            return true;
-        } else {
-            Toast.makeText(InterViewActivity.this, "版本过低，录频功能无法实现", Toast.LENGTH_LONG).show();
-            return false;
-        }
+        return true;
     }
 
     @Override
@@ -644,21 +655,19 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void startRecorder() {
-        if (mScreenRecorderService != null || true) {
+        if (mMediaRecordController != null) {
             Log.d(TAG, "startRecorder");
             Toast.makeText(InterViewActivity.this, "startRecorder", Toast.LENGTH_SHORT).show();
-//            mScreenRecorderService.start();
-            mMediaRecorderService.start();
+            mMediaRecordController.startRecord(mRemoteVideoFilePath);
         }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void stopRecorder() {
-        if (mScreenRecorderService != null || true) {
+        if (mMediaRecordController != null) {
             Log.d(TAG, "stopRecorder");
             Toast.makeText(InterViewActivity.this, "stopRecorder", Toast.LENGTH_SHORT).show();
-//            mScreenRecorderService.quit();
-            mMediaRecorderService.release();
+            mMediaRecordController.stopRecord();
         }
     }
 
