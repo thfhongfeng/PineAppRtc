@@ -63,7 +63,7 @@ public class MediaRecordController {
     private AtomicBoolean mVideoThreadCancel = new AtomicBoolean(true);
     private AtomicBoolean mAudioThreadCancel = new AtomicBoolean(true);
 
-    private LinkedBlockingQueue<ByteBuffer> mAudioOutBufferQueue;
+    private LinkedBlockingQueue<AudioData> mAudioOutBufferQueue;
     private int mAudioOutSource;
     private int mAudioOutFormat;
     private int mAudioOutSampleRate;
@@ -71,7 +71,7 @@ public class MediaRecordController {
     private int mAudioOutBitsPerSample;
     private int mAudioOutBuffersPerSecond;
     private int mAudioOutBufferSize;
-    private LinkedBlockingQueue<ByteBuffer> mAudioInBufferQueue;
+    private LinkedBlockingQueue<AudioData> mAudioInBufferQueue;
     private int mAudioInFormat;
     private int mAudioInSampleRate;
     private int mAudioInChannels;
@@ -121,7 +121,6 @@ public class MediaRecordController {
                                                     int channels, int bitsPerSample, int buffersPerSecond,
                                                     int bufferSize) {
                     mIsAudioOutInit.set(true);
-                    mAudioOutBufferQueue = new LinkedBlockingQueue<ByteBuffer>(QUEUE_MAX_COUNT);
                     mAudioOutSource = audioSource;
                     mAudioOutFormat = audioFormat;
                     mAudioOutSampleRate = sampleRate;
@@ -129,6 +128,7 @@ public class MediaRecordController {
                     mAudioOutBitsPerSample = bitsPerSample;
                     mAudioOutBuffersPerSecond = buffersPerSecond;
                     mAudioOutBufferSize = bufferSize;
+                    mAudioOutBufferQueue = new LinkedBlockingQueue<AudioData>(QUEUE_MAX_COUNT);
                     if (mIsAudioInInit.get()) {
                         judgeAudioParams();
                     }
@@ -154,7 +154,9 @@ public class MediaRecordController {
                         cpBuffer.put(byteBuffer.array(), byteBuffer.arrayOffset(), bytesRead);
                         cpBuffer.rewind();
                         cpBuffer.limit(bytesRead);
-                        mAudioOutBufferQueue.offer(cpBuffer);
+                        AudioData audioData = new AudioData(cpBuffer, System.nanoTime() / 1000L
+                                , bytesRead, 1);
+                        mAudioOutBufferQueue.offer(audioData);
                         cpBuffer.clear();
                     }
                 }
@@ -170,13 +172,13 @@ public class MediaRecordController {
                 public void onWebRtcAudioTrackInit(int audioFormat, int sampleRate, int channels,
                                                    int bitsPerSample, int buffersPerSecond, int bufferSize) {
                     mIsAudioInInit.set(true);
-                    mAudioInBufferQueue = new LinkedBlockingQueue<ByteBuffer>(QUEUE_MAX_COUNT);
                     mAudioInFormat = audioFormat;
                     mAudioInSampleRate = sampleRate;
                     mAudioInChannels = channels;
                     mAudioInBitsPerSample = bitsPerSample;
                     mAudioInBuffersPerSecond = buffersPerSecond;
                     mAudioInBufferSize = bufferSize;
+                    mAudioInBufferQueue = new LinkedBlockingQueue<AudioData>(QUEUE_MAX_COUNT);
                     if (mIsAudioOutInit.get()) {
                         judgeAudioParams();
                     }
@@ -200,7 +202,9 @@ public class MediaRecordController {
                         cpBuffer.put(byteBuffer.array(), byteBuffer.arrayOffset(), bytesWrite);
                         cpBuffer.rewind();
                         cpBuffer.limit(bytesWrite);
-                        mAudioInBufferQueue.offer(cpBuffer);
+                        AudioData audioData = new AudioData(cpBuffer, System.nanoTime() / 1000L,
+                                bytesWrite, 2);
+                        mAudioInBufferQueue.offer(audioData);
                         cpBuffer.clear();
                     }
                 }
@@ -335,40 +339,32 @@ public class MediaRecordController {
     }
 
     private boolean feedAudioData() {
-        ByteBuffer audioOutBuffer = mAudioOutBufferQueue.poll();
-        ByteBuffer audioInBuffer = mAudioInBufferQueue.poll();
-        int size = 0;
-        byte[][] bMulRoadAudios;
-        if (audioOutBuffer == null && audioInBuffer == null) {
+        if (mAudioOutBufferQueue.size() < 1 || mAudioInBufferQueue.size() < 1) {
             try {
-                // wait 5ms
                 Thread.sleep(5);
             } catch (InterruptedException e) {
+                e.printStackTrace();
             }
             return false;
-        } else if (audioOutBuffer == null) {
-            size = audioInBuffer.capacity();
-            bMulRoadAudios = new byte[1][size];
-            audioInBuffer.get(bMulRoadAudios[0], 0, size);
-        } else if (audioInBuffer == null) {
-            size = audioOutBuffer.capacity();
-            bMulRoadAudios = new byte[1][size];
-            audioOutBuffer.get(bMulRoadAudios[0], 0, size);
+        }
+        AudioData audioOut = mAudioOutBufferQueue.poll();
+        AudioData audioIn = mAudioInBufferQueue.poll();
+        ByteBuffer audioOutBuffer = audioOut.mData;
+        ByteBuffer audioInBuffer = audioIn.mData;
+        int outSize = audioOut.mSize;
+        int inSize = audioIn.mSize;
+        int size = Math.max(outSize, inSize);
+        long timeUs = audioOut.mPresentationTimeUs;
+        byte[][] bMulRoadAudios = new byte[2][size];
+        audioOutBuffer.get(bMulRoadAudios[0], 0, size);
+        audioInBuffer.get(bMulRoadAudios[1], 0, size);
+        if (outSize > inSize) {
+            for (int i = inSize; i < outSize; i++) {
+                bMulRoadAudios[1][i] = 0x00;
+            }
         } else {
-            int outSize = audioOutBuffer.capacity();
-            int inSize = audioInBuffer.capacity();
-            size = Math.max(outSize, inSize);
-            bMulRoadAudios = new byte[2][size];
-            audioOutBuffer.get(bMulRoadAudios[0], 0, size);
-            audioInBuffer.get(bMulRoadAudios[1], 0, size);
-            if (outSize > inSize) {
-                for (int i = inSize; i < outSize; i++) {
-                    bMulRoadAudios[1][i] = 0x00;
-                }
-            } else {
-                for (int i = outSize; i < inSize; i++) {
-                    bMulRoadAudios[0][i] = 0x00;
-                }
+            for (int i = outSize; i < inSize; i++) {
+                bMulRoadAudios[0][i] = 0x00;
             }
         }
         byte[] mixAudio = averageMix(bMulRoadAudios);
@@ -378,7 +374,7 @@ public class MediaRecordController {
             inputBuffer.clear();
             inputBuffer.put(mixAudio);
             mAudioCodec.queueInputBuffer(index, 0, size,
-                    System.nanoTime() / 1000L, // presentationTimeUs要与视频的一致（MediaProjection使用的是System.nanoTime() / 1000L）
+                    timeUs, // presentationTimeUs要与视频的一致（MediaProjection使用的是System.nanoTime() / 1000L）
                     mAudioThreadCancel.get() ? MediaCodec.BUFFER_FLAG_END_OF_STREAM : 0);
         }
         return false;
@@ -621,5 +617,19 @@ public class MediaRecordController {
     // call back listener
     public interface OnRecordListener {
         void onFinish(String filePath);
+    }
+
+    class AudioData {
+        ByteBuffer mData;
+        long mPresentationTimeUs;
+        int mSize;
+        int mType;  // 1-out;2-in
+
+        public AudioData(ByteBuffer data, long timeUs, int size, int type) {
+            mData = data;
+            mPresentationTimeUs = timeUs;
+            mSize = size;
+            mType = type;
+        }
     }
 }
