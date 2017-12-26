@@ -239,7 +239,7 @@ public class MediaRecordController {
     public void setupController(OnRecordListener listener, MediaProjection mp, int bitrate,
                                 int dpi, int width, int height) {
         if (!mIsCreate.get()) {
-            throw new RuntimeException("you need call onCreate method of MediaRecordController before setup controller");
+            onCreate();
         }
         mOnRecordListener = listener;
         mMediaProjection = mp;
@@ -336,6 +336,69 @@ public class MediaRecordController {
                 mVideoThread.start();
             }
         });
+    }
+
+    public final synchronized void stopRecord() {
+        release(false);
+    }
+
+    public void release(final boolean destroy) {
+        if (mRecorderThreadHandler != null) {
+            mRecorderThreadHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (mAudioFeedThread != null && mAudioFeedThread.isAlive()) {
+                            mAudioThreadCancel.set(true);
+                            mAudioFeedThread.join();
+                        }
+                        if (mAudioWriteThread != null && mAudioWriteThread.isAlive()) {
+                            mAudioThreadCancel.set(true);
+                            mAudioWriteThread.join();
+                        }
+                        if (mVideoThread != null && mVideoThread.isAlive()) {
+                            mVideoThreadCancel.set(true);
+                            mVideoThread.join();
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        mAudioThreadCancel.set(true);
+                        mVideoThreadCancel.set(true);
+                    }
+                    if (mVirtualDisplay != null) {
+                        mVirtualDisplay.release();
+                    }
+                    if (destroy) {
+                        mMediaProjection = null;
+                    }
+                    if (mAudioCodec != null) {
+                        mAudioCodec.stop();
+                        mAudioCodec.release();
+                        mAudioCodec = null;
+                    }
+                    if (mVideoCodec != null) {
+                        mVideoCodec.stop();
+                        mVideoCodec.release();
+                        mVideoCodec = null;
+                    }
+                    mAudioTrackIndex = -1;
+                    mVideoTrackIndex = -1;
+                    if (mMuxerStarted.get()) {
+                        mMuxerStarted.set(false);
+                        if (mMediaMuxer != null) {
+                            mMediaMuxer.stop();
+                            mMediaMuxer.release();
+                            mMediaMuxer = null;
+                        }
+                    }
+                    if (mOnRecordListener != null) {
+                        mOnRecordListener.onFinish(mDstPath);
+                        mOnRecordListener = null;
+                    }
+                }
+            });
+        }
     }
 
     private boolean feedAudioData() {
@@ -505,69 +568,6 @@ public class MediaRecordController {
         mSurface = mVideoCodec.createInputSurface();
         Log.d(TAG, "created input surface: " + mSurface);
         mVideoCodec.start();
-    }
-
-    public final synchronized void stopRecord() {
-        release(false);
-    }
-
-    public void release(final boolean destroy) {
-        if (mRecorderThreadHandler != null) {
-            mRecorderThreadHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        if (mAudioFeedThread != null && mAudioFeedThread.isAlive()) {
-                            mAudioThreadCancel.set(true);
-                            mAudioFeedThread.join();
-                        }
-                        if (mAudioWriteThread != null && mAudioWriteThread.isAlive()) {
-                            mAudioThreadCancel.set(true);
-                            mAudioWriteThread.join();
-                        }
-                        if (mVideoThread != null && mVideoThread.isAlive()) {
-                            mVideoThreadCancel.set(true);
-                            mVideoThread.join();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        mAudioThreadCancel.set(true);
-                        mVideoThreadCancel.set(true);
-                    }
-                    if (mVirtualDisplay != null) {
-                        mVirtualDisplay.release();
-                    }
-                    if (destroy) {
-                        mMediaProjection = null;
-                    }
-                    if (mAudioCodec != null) {
-                        mAudioCodec.stop();
-                        mAudioCodec.release();
-                        mAudioCodec = null;
-                    }
-                    if (mVideoCodec != null) {
-                        mVideoCodec.stop();
-                        mVideoCodec.release();
-                        mVideoCodec = null;
-                    }
-                    mAudioTrackIndex = -1;
-                    mVideoTrackIndex = -1;
-                    if (mMuxerStarted.get()) {
-                        mMuxerStarted.set(false);
-                        if (mMediaMuxer != null) {
-                            mMediaMuxer.stop();
-                            mMediaMuxer.release();
-                            mMediaMuxer = null;
-                        }
-                    }
-                    if (mOnRecordListener != null) {
-                        mOnRecordListener.onFinish(mDstPath);
-                        mOnRecordListener = null;
-                    }
-                }
-            });
-        }
     }
 
     /**

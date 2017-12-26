@@ -23,6 +23,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.pine.rtc.R;
@@ -64,10 +65,9 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
             "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
     private static final int MEDIA_PROJECTION_REQUEST_CODE = 1;
-
     // Peer connection statistics callback period in ms.
     private static final int STAT_CALLBACK_PERIOD = 1000;
-
+    private final int MSG_TIME_TICK = 1;
     private final ProxyRenderer mRemoteProxyRender = new ProxyRenderer();
     private final ProxyRenderer mLocalProxyRender = new ProxyRenderer();
     private final List<VideoRenderer.Callbacks> mRemoteRenders =
@@ -103,10 +103,27 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     private MediaProjection mMediaProjection;
     private MediaProjectionScreenShot mMediaProjectionScreenShot;
     private String mRemoteVideoFilePath;
+
+    private TextView recordTimeText;
+    private Long mRecordStartTime;
+
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-
+            switch (msg.what) {
+                case MSG_TIME_TICK:
+                    long time = (System.currentTimeMillis() - mRecordStartTime) / 1000L;
+                    long hour = time / 3600;
+                    long minute = time % 3600 / 60;
+                    long second = time % 60;
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.append(hour < 10 ? ("0" + hour) : hour).append(":")
+                            .append(minute < 10 ? ("0" + minute) : minute).append(":")
+                            .append(second < 10 ? ("0" + second) : second);
+                    recordTimeText.setText(stringBuilder.toString());
+                    sendEmptyMessageDelayed(MSG_TIME_TICK, 500);
+                    break;
+            }
         }
     };
 
@@ -127,6 +144,8 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         pipRendererView = (SurfaceViewRenderer) findViewById(R.id.pip_video_view);
         fullscreenRendererView = (SurfaceViewRenderer) findViewById(R.id.fullscreen_video_view);
         mInterViewFragment = new InterViewFragment();
+
+        recordTimeText = (TextView) findViewById(R.id.record_time_tv);
 
         // Show/hide call control fragment on view click.
         View.OnClickListener listener = new View.OnClickListener() {
@@ -377,6 +396,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                 mMediaRecordController.release(true);
             }
         }
+        mHandler.removeMessages(MSG_TIME_TICK);
         super.onDestroy();
     }
 
@@ -426,6 +446,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                 onToggleSpeaker();
             }
         });
+        /** Test Code (not correct) begin **/
 //        if (MediaCodecVideoEncoderUtil.isDeviceSupportRecorder(MediaFormat.MIMETYPE_VIDEO_AVC)) {
 //            File file = new File(Environment.getExternalStorageDirectory().getPath() + "/rtc");
 //            if (!file.exists()) {
@@ -468,6 +489,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 //                }
 //            });
 //        }
+        /** Test Code (not correct) end **/
     }
 
     // This method is called when the audio manager reports audio device change,
@@ -602,6 +624,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             mMediaProjectionScreenShot.startScreenShot();
         }
 
+        /** For EglRenderScreenShot(Another way of Screenshot) begin **/
 //        SurfaceViewRenderer renderer = mRemoteProxyRender.getTarget();
 //        if (renderer != null) {
 //            EglRenderScreenShot.getInstance().setupScreenShot(renderer, new EglRenderScreenShot.OnShotListener() {
@@ -619,6 +642,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 //        } else {
 //            Toast.makeText(InterViewActivity.this, "无法截屏", Toast.LENGTH_LONG).show();
 //        }
+        /** For EglRenderScreenShot(Another way of Screenshot) end **/
     }
 
     private boolean requestMediaProjection() {
@@ -635,6 +659,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
     @Override
     public void onVideoRecord(final View recordButton) {
+        /** Test Code (not correct) begin **/
 //        if (mPeerConnectionClient.isRecorderPrepared() && mVideoFileRenderer != null) {
 //            if (!mIsRecording) {
 //                startRecorder(recordButton);
@@ -642,13 +667,19 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 //                stopRecorder(recordButton);
 //            }
 //        }
+        /** Test Code (not correct) end **/
         if (mPeerConnectionClient.isRecorderPrepared() && Build.VERSION.SDK_INT >= 21) {
             if (!mIsRecording) {
                 mIsRecording = true;
                 startRecorder();
+                mRecordStartTime = System.currentTimeMillis();
+                mHandler.sendEmptyMessage(MSG_TIME_TICK);
+                recordTimeText.setVisibility(View.VISIBLE);
             } else {
                 mIsRecording = false;
                 stopRecorder();
+                mHandler.removeMessages(MSG_TIME_TICK);
+                recordTimeText.setVisibility(View.GONE);
             }
         }
     }
@@ -671,6 +702,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         }
     }
 
+    /** Test Code (not correct) begin **/
 //    private void startRecorder(final View recordButton) {
 //        mIsRecording = true;
 //        DisplayMetrics displayMetrics = getDisplayMetrics();
@@ -682,6 +714,10 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 //        mIsRecording = false;
 //        mVideoFileRenderer.stopRecord();
 //    }
+
+    /**
+     * Test Code (not correct) end
+     **/
 
     @Override
     public boolean onToggleMic() {

@@ -30,6 +30,7 @@ import static org.webrtc.VideoFileRenderer.nativeI420Scale;
  * Created by tanghongfeng on 2017/11/22.
  */
 
+/** Test Class (not correct) **/
 @TargetApi(Build.VERSION_CODES.KITKAT)
 public class VideoFileRenderer implements VideoRenderer.Callbacks {
     private static final String TAG = "VideoFileRenderer";
