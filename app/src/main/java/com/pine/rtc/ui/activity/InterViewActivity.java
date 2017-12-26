@@ -53,7 +53,10 @@ import org.webrtc.VideoCapturer;
 import org.webrtc.VideoRenderer;
 
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -106,6 +109,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
     private TextView recordTimeText;
     private Long mRecordStartTime;
+    private DateFormat mRecordTimeFormat;
 
     private Handler mHandler = new Handler() {
         @Override
@@ -113,14 +117,13 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             switch (msg.what) {
                 case MSG_TIME_TICK:
                     long time = (System.currentTimeMillis() - mRecordStartTime) / 1000L;
-                    long hour = time / 3600;
                     long minute = time % 3600 / 60;
                     long second = time % 60;
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.append(hour < 10 ? ("0" + hour) : hour).append(":")
-                            .append(minute < 10 ? ("0" + minute) : minute).append(":")
+                    stringBuilder.append(minute < 10 ? ("0" + minute) : minute).append(":")
                             .append(second < 10 ? ("0" + second) : second);
-                    recordTimeText.setText(stringBuilder.toString());
+                    mInterViewFragment.onRecorderTimeTick(stringBuilder.toString());
+                    recordTimeText.setText(mRecordTimeFormat.format(new Date()));
                     sendEmptyMessageDelayed(MSG_TIME_TICK, 500);
                     break;
             }
@@ -146,6 +149,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         mInterViewFragment = new InterViewFragment();
 
         recordTimeText = (TextView) findViewById(R.id.record_time_tv);
+        mRecordTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         // Show/hide call control fragment on view click.
         View.OnClickListener listener = new View.OnClickListener() {
@@ -307,7 +311,13 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             mMediaRecordController.setupController(new MediaRecordController.OnRecordListener() {
                 @Override
                 public void onFinish(String filePath) {
-
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mInterViewFragment.onRecorderChange(false);
+                            logAndToast("结束录制，文件已保存在" + mRemoteVideoFilePath);
+                        }
+                    });
                 }
             }, mMediaProjection);
         }
@@ -670,16 +680,9 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         /** Test Code (not correct) end **/
         if (mPeerConnectionClient.isRecorderPrepared() && Build.VERSION.SDK_INT >= 21) {
             if (!mIsRecording) {
-                mIsRecording = true;
                 startRecorder();
-                mRecordStartTime = System.currentTimeMillis();
-                mHandler.sendEmptyMessage(MSG_TIME_TICK);
-                recordTimeText.setVisibility(View.VISIBLE);
             } else {
-                mIsRecording = false;
                 stopRecorder();
-                mHandler.removeMessages(MSG_TIME_TICK);
-                recordTimeText.setVisibility(View.GONE);
             }
         }
     }
@@ -687,18 +690,25 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void startRecorder() {
         if (mMediaRecordController != null) {
-            Log.d(TAG, "startRecorder");
-            Toast.makeText(InterViewActivity.this, "startRecorder", Toast.LENGTH_SHORT).show();
+            logAndToast("开始录制");
+            mIsRecording = true;
             mMediaRecordController.startRecord(mRemoteVideoFilePath);
+            mInterViewFragment.onRecorderChange(true);
+            mRecordStartTime = System.currentTimeMillis();
+            mHandler.sendEmptyMessage(MSG_TIME_TICK);
+            recordTimeText.setVisibility(View.VISIBLE);
         }
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void stopRecorder() {
         if (mMediaRecordController != null) {
-            Log.d(TAG, "stopRecorder");
-            Toast.makeText(InterViewActivity.this, "stopRecorder", Toast.LENGTH_SHORT).show();
+            logAndToast("正在结束录制，请等待 ……");
+            mIsRecording = false;
             mMediaRecordController.stopRecord();
+            mInterViewFragment.onRecorderChange(false);
+            mHandler.removeMessages(MSG_TIME_TICK);
+            recordTimeText.setVisibility(View.GONE);
         }
     }
 

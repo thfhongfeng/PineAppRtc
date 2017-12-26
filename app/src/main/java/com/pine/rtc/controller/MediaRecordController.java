@@ -40,6 +40,13 @@ public class MediaRecordController {
     private static final String VIDEO_MIME_TYPE = MediaFormat.MIMETYPE_VIDEO_AVC;
     private static final String AUDIO_MIME_TYPE = MediaFormat.MIMETYPE_AUDIO_AAC;
     private static final int QUEUE_MAX_COUNT = 100;
+    private static final long DEQUEUE_TIME_OUT = 100L;
+
+    private static final int STATE_IDLE = 0;
+    private static final int STATE_PREPARING = 1;
+    private static final int STATE_RECORDING = 2;
+    private static final int STATE_STOPPING = 3;
+
     private static MediaRecordController mInstance;
     private final Object mLock = new Object();
 
@@ -56,6 +63,7 @@ public class MediaRecordController {
     private MediaProjection mMediaProjection;
     private VirtualDisplay mVirtualDisplay;
     private HandlerThread mRecorderThread;
+    private int mState = STATE_IDLE;
     private Handler mRecorderThreadHandler;
     private Thread mVideoThread;
     private Thread mAudioFeedThread;
@@ -113,6 +121,7 @@ public class MediaRecordController {
     }
 
     public void onCreate() {
+        mState = STATE_IDLE;
         if (!mIsCreate.get()) {
             mIsCreate.set(true);
             WebRtcAudioRecord.setWebRtcAudioRecordCallback(new WebRtcAudioRecord.WebRtcAudioRecordCallback() {
@@ -250,6 +259,7 @@ public class MediaRecordController {
         mRecorderThread = new HandlerThread("MediaRecordController");
         mRecorderThread.start();
         mRecorderThreadHandler = new Handler(mRecorderThread.getLooper());
+        mState = STATE_IDLE;
     }
 
     public void startRecord() {
@@ -273,6 +283,7 @@ public class MediaRecordController {
             @Override
             public void run() {
                 try {
+                    mState = STATE_PREPARING;
                     if (mAudioFeedThread != null && mAudioFeedThread.isAlive()) {
                         mAudioThreadCancel.set(true);
                         mAudioFeedThread.join();
@@ -334,11 +345,13 @@ public class MediaRecordController {
                     }
                 });
                 mVideoThread.start();
+                mState = STATE_RECORDING;
             }
         });
     }
 
     public final synchronized void stopRecord() {
+        mState = STATE_STOPPING;
         release(false);
     }
 
@@ -392,10 +405,14 @@ public class MediaRecordController {
                             mMediaMuxer = null;
                         }
                     }
-                    if (mOnRecordListener != null) {
+                    if (mOnRecordListener != null && mState != STATE_IDLE) {
                         mOnRecordListener.onFinish(mDstPath);
+                    }
+                    if (destroy) {
                         mOnRecordListener = null;
                     }
+                    mState = STATE_IDLE;
+                    Logging.d(TAG, "released");
                 }
             });
         }
@@ -445,8 +462,7 @@ public class MediaRecordController {
 
     private boolean writeAudioData() {
         MediaCodec.BufferInfo audioBufferInfo = new MediaCodec.BufferInfo();
-        int outIndex = mAudioCodec.dequeueOutputBuffer(audioBufferInfo,
-                (System.nanoTime() - mNanoTime) / 1000L);
+        int outIndex = mAudioCodec.dequeueOutputBuffer(audioBufferInfo, DEQUEUE_TIME_OUT);
         if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
             // 后续输出格式变化
             if (mMuxerStarted.get()) {
@@ -499,7 +515,7 @@ public class MediaRecordController {
 
     private boolean writeVideoData() {
         MediaCodec.BufferInfo videoBufferInfo = new MediaCodec.BufferInfo();
-        int outIndex = mVideoCodec.dequeueOutputBuffer(videoBufferInfo, (System.nanoTime() - mNanoTime) / 1000L);
+        int outIndex = mVideoCodec.dequeueOutputBuffer(videoBufferInfo, DEQUEUE_TIME_OUT);
         if (outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
             // 后续输出格式变化
             if (mMuxerStarted.get()) {

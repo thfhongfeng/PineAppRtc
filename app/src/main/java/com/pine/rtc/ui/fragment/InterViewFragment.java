@@ -137,6 +137,14 @@ public class InterViewFragment extends Fragment {
             return;
         }
         recordVideoButton.setSelected(isRecording);
+        recordVideoButton.setText(isRecording ? "" : "录像");
+    }
+
+    public void onRecorderTimeTick(String timeTick) {
+        if (recordVideoButton == null) {
+            return;
+        }
+        recordVideoButton.setText(timeTick);
     }
 
     public void onSpeakerChange(boolean isOn) {
@@ -152,7 +160,6 @@ public class InterViewFragment extends Fragment {
         }
         toggleMuteButton.setSelected(!isMicEnable);
     }
-
 
     /**
      * Call control interface for container activity.
