@@ -62,6 +62,9 @@
         <activity
             android:name=".ui.activity.InterViewActivity"
             android:screenOrientation="portrait"></activity>
+        <activity
+            android:name=".ui.activity.MyCallActivity"
+            android:screenOrientation="portrait"></activity>
     </application>
 
 </manifest>

@@ -35,7 +35,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.pine.rtc.R;
-import com.pine.rtc.ui.activity.InterViewActivity;
 import com.pine.rtc.ui.activity.VideoPlayerActivity;
 
 import org.json.JSONArray;
@@ -543,7 +542,9 @@ public class ConnectActivity extends Activity {
         Log.d(TAG, "Connecting to room " + roomId + " at URL " + roomUrl);
         if (validateUrl(roomUrl)) {
             Uri uri = Uri.parse(roomUrl);
-            Intent intent = new Intent(this, InterViewActivity.class);
+//            Intent intent = new Intent(this, CallActivity.class);
+            Intent intent = new Intent(this, com.pine.rtc.ui.activity.MyCallActivity.class);
+//            Intent intent = new Intent(this, com.pine.rtc.ui.activity.InterViewActivity.class);
             intent.setData(uri);
             intent.putExtra(CallActivity.EXTRA_ROOMID, roomId);
             intent.putExtra(CallActivity.EXTRA_LOOPBACK, loopback);

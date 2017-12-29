@@ -60,11 +60,58 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-// for purang company
-public class InterViewActivity extends Activity implements AppRTCClient.SignalingEvents,
+public class MyCallActivity extends Activity implements AppRTCClient.SignalingEvents,
         PeerConnectionClient.PeerConnectionEvents, InterViewFragment.OnCallEvents {
     public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
-    private static final String TAG = InterViewActivity.class.getSimpleName();
+    public static final String EXTRA_URLPARAMETERS = "org.appspot.apprtc.URLPARAMETERS";
+    public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
+    public static final String EXTRA_VIDEO_CALL = "org.appspot.apprtc.VIDEO_CALL";
+    public static final String EXTRA_SCREENCAPTURE = "org.appspot.apprtc.SCREENCAPTURE";
+    public static final String EXTRA_CAMERA2 = "org.appspot.apprtc.CAMERA2";
+    public static final String EXTRA_VIDEO_WIDTH = "org.appspot.apprtc.VIDEO_WIDTH";
+    public static final String EXTRA_VIDEO_HEIGHT = "org.appspot.apprtc.VIDEO_HEIGHT";
+    public static final String EXTRA_VIDEO_FPS = "org.appspot.apprtc.VIDEO_FPS";
+    public static final String EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED =
+            "org.appsopt.apprtc.VIDEO_CAPTUREQUALITYSLIDER";
+    public static final String EXTRA_VIDEO_BITRATE = "org.appspot.apprtc.VIDEO_BITRATE";
+    public static final String EXTRA_VIDEOCODEC = "org.appspot.apprtc.VIDEOCODEC";
+    public static final String EXTRA_HWCODEC_ENABLED = "org.appspot.apprtc.HWCODEC";
+    public static final String EXTRA_CAPTURETOTEXTURE_ENABLED = "org.appspot.apprtc.CAPTURETOTEXTURE";
+    public static final String EXTRA_FLEXFEC_ENABLED = "org.appspot.apprtc.FLEXFEC";
+    public static final String EXTRA_AUDIO_BITRATE = "org.appspot.apprtc.AUDIO_BITRATE";
+    public static final String EXTRA_AUDIOCODEC = "org.appspot.apprtc.AUDIOCODEC";
+    public static final String EXTRA_NOAUDIOPROCESSING_ENABLED =
+            "org.appspot.apprtc.NOAUDIOPROCESSING";
+    public static final String EXTRA_AECDUMP_ENABLED = "org.appspot.apprtc.AECDUMP";
+    public static final String EXTRA_OPENSLES_ENABLED = "org.appspot.apprtc.OPENSLES";
+    public static final String EXTRA_DISABLE_BUILT_IN_AEC = "org.appspot.apprtc.DISABLE_BUILT_IN_AEC";
+    public static final String EXTRA_DISABLE_BUILT_IN_AGC = "org.appspot.apprtc.DISABLE_BUILT_IN_AGC";
+    public static final String EXTRA_DISABLE_BUILT_IN_NS = "org.appspot.apprtc.DISABLE_BUILT_IN_NS";
+    public static final String EXTRA_ENABLE_LEVEL_CONTROL = "org.appspot.apprtc.ENABLE_LEVEL_CONTROL";
+    public static final String EXTRA_DISABLE_WEBRTC_AGC_AND_HPF =
+            "org.appspot.apprtc.DISABLE_WEBRTC_GAIN_CONTROL";
+    public static final String EXTRA_DISPLAY_HUD = "org.appspot.apprtc.DISPLAY_HUD";
+    public static final String EXTRA_TRACING = "org.appspot.apprtc.TRACING";
+    public static final String EXTRA_CMDLINE = "org.appspot.apprtc.CMDLINE";
+    public static final String EXTRA_RUNTIME = "org.appspot.apprtc.RUNTIME";
+    public static final String EXTRA_VIDEO_FILE_AS_CAMERA = "org.appspot.apprtc.VIDEO_FILE_AS_CAMERA";
+    public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE =
+            "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE";
+    public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_WIDTH =
+            "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_WIDTH";
+    public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT =
+            "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT";
+    public static final String EXTRA_USE_VALUES_FROM_INTENT =
+            "org.appspot.apprtc.USE_VALUES_FROM_INTENT";
+    public static final String EXTRA_DATA_CHANNEL_ENABLED = "org.appspot.apprtc.DATA_CHANNEL_ENABLED";
+    public static final String EXTRA_ORDERED = "org.appspot.apprtc.ORDERED";
+    public static final String EXTRA_MAX_RETRANSMITS_MS = "org.appspot.apprtc.MAX_RETRANSMITS_MS";
+    public static final String EXTRA_MAX_RETRANSMITS = "org.appspot.apprtc.MAX_RETRANSMITS";
+    public static final String EXTRA_PROTOCOL = "org.appspot.apprtc.PROTOCOL";
+    public static final String EXTRA_NEGOTIATED = "org.appspot.apprtc.NEGOTIATED";
+    public static final String EXTRA_ID = "org.appspot.apprtc.ID";
+
+    private static final String TAG = MyCallActivity.class.getSimpleName();
     // List of mandatory application permissions.
     private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
             "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
@@ -216,13 +263,44 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             finish();
             return;
         }
-        DisplayMetrics displayMetrics = getDisplayMetrics();
-        int videoWidth = displayMetrics.widthPixels;
-        int videoHeight = displayMetrics.heightPixels;
+
+        boolean loopback = intent.getBooleanExtra(EXTRA_LOOPBACK, false);
+        boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, false);
+
+        int videoWidth = intent.getIntExtra(EXTRA_VIDEO_WIDTH, 0);
+        int videoHeight = intent.getIntExtra(EXTRA_VIDEO_HEIGHT, 0);
+
+        mScreenCaptureEnabled = intent.getBooleanExtra(EXTRA_SCREENCAPTURE, false);
+        // If capturing format is not specified for screencapture, use screen resolution.
+        if (mScreenCaptureEnabled && videoWidth == 0 && videoHeight == 0) {
+            DisplayMetrics displayMetrics = getDisplayMetrics();
+            videoWidth = displayMetrics.widthPixels;
+            videoHeight = displayMetrics.heightPixels;
+        }
+
+        PeerConnectionClient.DataChannelParameters dataChannelParameters = null;
+        if (intent.getBooleanExtra(EXTRA_DATA_CHANNEL_ENABLED, false)) {
+            dataChannelParameters = new PeerConnectionClient.DataChannelParameters(intent.getBooleanExtra(EXTRA_ORDERED, true),
+                    intent.getIntExtra(EXTRA_MAX_RETRANSMITS_MS, -1),
+                    intent.getIntExtra(EXTRA_MAX_RETRANSMITS, -1), intent.getStringExtra(EXTRA_PROTOCOL),
+                    intent.getBooleanExtra(EXTRA_NEGOTIATED, false), intent.getIntExtra(EXTRA_ID, -1));
+        }
+
         mPeerConnectionParameters =
-                new PeerConnectionClient.PeerConnectionParameters(true, false,
-                        false, videoWidth, videoHeight, 15, 1700, "H264 Baseline", true, false, 32,
-                        "OPUS", false, false, false, false, false, false, false, false, null);
+                new PeerConnectionClient.PeerConnectionParameters(intent.getBooleanExtra(EXTRA_VIDEO_CALL, true), loopback,
+                        tracing, videoWidth, videoHeight, intent.getIntExtra(EXTRA_VIDEO_FPS, 0),
+                        intent.getIntExtra(EXTRA_VIDEO_BITRATE, 0), intent.getStringExtra(EXTRA_VIDEOCODEC),
+                        intent.getBooleanExtra(EXTRA_HWCODEC_ENABLED, true),
+                        intent.getBooleanExtra(EXTRA_FLEXFEC_ENABLED, false),
+                        intent.getIntExtra(EXTRA_AUDIO_BITRATE, 0), intent.getStringExtra(EXTRA_AUDIOCODEC),
+                        intent.getBooleanExtra(EXTRA_NOAUDIOPROCESSING_ENABLED, false),
+                        intent.getBooleanExtra(EXTRA_AECDUMP_ENABLED, false),
+                        intent.getBooleanExtra(EXTRA_OPENSLES_ENABLED, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AEC, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AGC, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_NS, false),
+                        intent.getBooleanExtra(EXTRA_ENABLE_LEVEL_CONTROL, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_WEBRTC_AGC_AND_HPF, false), dataChannelParameters);
 
         // Create connection client. Use DirectRTCClient if room name is an IP otherwise use the
         // standard WebSocketRTCClient.
@@ -232,9 +310,11 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             Log.i(TAG, "Using DirectRTCClient because room name looks like an IP.");
             mAppRtcClient = new DirectRTCClient(this);
         }
+
+        String urlParameters = intent.getStringExtra(EXTRA_URLPARAMETERS);
         mRoomConnectionParameters =
                 new AppRTCClient.RoomConnectionParameters(getString(R.string.pref_room_server_url_default),
-                        roomUri.toString(), mRoomId, false, null);
+                        roomUri.toString(), mRoomId, false, urlParameters);
 
         // Send intent arguments to fragments.
         mInterViewFragment.setArguments(intent.getExtras());
@@ -245,7 +325,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
         mPeerConnectionClient = PeerConnectionClient.getInstance();
         mPeerConnectionClient.createPeerConnectionFactory(
-                getApplicationContext(), mPeerConnectionParameters, InterViewActivity.this);
+                getApplicationContext(), mPeerConnectionParameters, MyCallActivity.this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mMediaRecordController = MediaRecordController.getInstance();
             mMediaRecordController.onCreate();
@@ -265,7 +345,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == MEDIA_PROJECTION_REQUEST_CODE) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 if (resultCode == RESULT_OK && data != null) {
                     if (mMediaProjection == null) {
                         mMediaProjection = ((MediaProjectionManager) getSystemService(
@@ -289,13 +369,13 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     new MediaProjectionScreenShot.OnShotListener() {
                         @Override
                         public void onFinish(Bitmap bitmap) {
-                            DialogUtil.popShotScreenDialog(InterViewActivity.this, bitmap);
+                            DialogUtil.popShotScreenDialog(MyCallActivity.this, bitmap);
                         }
 
                         @Override
                         public void onSaveFinish(String filePath) {
                             String msg = "截图已经保存在 " + filePath;
-                            Toast.makeText(InterViewActivity.this, msg, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MyCallActivity.this, msg, Toast.LENGTH_SHORT).show();
                         }
                     }, mMediaProjection);
         }
@@ -325,7 +405,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     }
 
     private boolean useCamera2() {
-        return Camera2Enumerator.isSupported(this);
+        return Camera2Enumerator.isSupported(this) && getIntent().getBooleanExtra(EXTRA_CAMERA2, true);
     }
 
     private VideoCapturer createCameraCapturer(CameraEnumerator enumerator) {
@@ -662,7 +742,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     ((MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE))
                             .createScreenCaptureIntent(), MEDIA_PROJECTION_REQUEST_CODE);
         } else {
-            Toast.makeText(InterViewActivity.this, "版本过低，截屏录像功能无法实现", Toast.LENGTH_LONG).show();
+            Toast.makeText(MyCallActivity.this, "版本过低，截屏录像功能无法实现", Toast.LENGTH_LONG).show();
             return false;
         }
         return true;
