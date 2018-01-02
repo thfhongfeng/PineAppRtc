@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.pine.rtcdemo">
+    package="com.pine.rtc">
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
@@ -23,15 +23,10 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name">
         <activity
-            android:name="com.pine.rtc.org.component.ConnectActivity"
+            android:name=".org.component.ConnectActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -47,7 +42,20 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.activity.InterViewActivity"
+            android:name=".org.component.SettingsActivity"
+            android:label="@string/settings_name"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".org.component.CallActivity"
+            android:configChanges="orientation|screenSize"
+            android:label="@string/app_name"
+            android:screenOrientation="portrait"
+            android:theme="@style/CallActivityTheme" />
+        <activity
+            android:name=".ui.activity.VideoPlayerActivity"
+            android:screenOrientation="portrait" />
+        <activity
+            android:name=".ui.activity.MyCallActivity"
             android:screenOrientation="portrait"></activity>
     </application>
 

@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/PineAppRtc.iml" filepath="$PROJECT_DIR$/PineAppRtc.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/pine-rtc/pine-rtc.iml" filepath="$PROJECT_DIR$/pine-rtc/pine-rtc.iml" />
     </modules>
   </component>
 </project>

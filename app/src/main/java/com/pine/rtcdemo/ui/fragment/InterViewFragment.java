@@ -8,7 +8,7 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-package com.pine.rtc.ui.fragment;
+package com.pine.rtcdemo.ui.fragment;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -19,13 +19,13 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.pine.rtc.R;
-import com.pine.rtc.org.component.CallActivity;
+import com.pine.rtcdemo.R;
+import com.pine.rtcdemo.ui.activity.InterViewActivity;
 
 /**
  * Fragment for call control.
  */
-public class MyCallFragment extends Fragment {
+public class InterViewFragment extends Fragment {
     private View controlView;
     private TextView contactTv;
     private TextView stateTv;
@@ -95,7 +95,7 @@ public class MyCallFragment extends Fragment {
         super.onStart();
         Bundle args = getArguments();
         if (args != null) {
-            String contactName = args.getString(CallActivity.EXTRA_ROOMID);
+            String contactName = args.getString(InterViewActivity.EXTRA_ROOMID);
             contactTv.setText(contactName);
         }
     }

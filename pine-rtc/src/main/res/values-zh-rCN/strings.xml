@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="call_room">房间：%1$s</string>
+    <string name="call_record">录像</string>
+    <string name="call_capture_screen">截屏</string>
+    <string name="call_mic_mute">静音</string>
+    <string name="call_speaker">扬声器</string>
+
+    <string name="call_connecting">正在连接中……</string>
+    <string name="call_connected">正在通话中</string>
+</resources>

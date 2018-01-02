@@ -23,15 +23,15 @@
                 android:id="@+id/contact_name_tv"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="客户经理-X先生"
+                android:text="房间"
                 android:textColor="#FFFFFF"
-                android:textSize="24sp" />
+                android:textSize="20sp" />
 
             <TextView
                 android:id="@+id/state_tv"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="正在面签中"
+                android:text="正在通话中"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -66,7 +66,7 @@
                 android:gravity="center"
                 android:padding="10dp"
                 android:singleLine="true"
-                android:text="录像"
+                android:text="@string/call_record"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
 
@@ -79,7 +79,7 @@
                 android:gravity="center"
                 android:padding="10dp"
                 android:singleLine="true"
-                android:text="截屏"
+                android:text="@string/call_capture_screen"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </LinearLayout>
@@ -108,7 +108,7 @@
                 android:gravity="center"
                 android:padding="10dp"
                 android:singleLine="true"
-                android:text="静音"
+                android:text="@string/call_mic_mute"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
 
@@ -121,7 +121,7 @@
                 android:gravity="center"
                 android:padding="10dp"
                 android:singleLine="true"
-                android:text="扬声器"
+                android:text="@string/call_speaker"
                 android:textColor="#FFFFFF"
                 android:textSize="14sp" />
         </LinearLayout>

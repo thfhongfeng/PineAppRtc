@@ -28,7 +28,7 @@ public class DialogUtil {
         }
         final AlertDialog cutDialog = new AlertDialog.Builder(context).create();
         View dialogView = View.inflate(context, R.layout.show_shot_screen_layout, null);
-        ImageView imageView = dialogView.findViewById(R.id.show_cut_screen_img);
+        ImageView imageView = (ImageView) dialogView.findViewById(R.id.show_cut_screen_img);
         cutDialog.setView(dialogView);
         Window window = cutDialog.getWindow();
         window.setBackgroundDrawableResource(android.R.color.transparent);

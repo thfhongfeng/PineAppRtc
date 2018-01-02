@@ -36,7 +36,7 @@ import com.pine.rtc.org.component.PeerConnectionClient;
 import com.pine.rtc.org.component.UnhandledExceptionHandler;
 import com.pine.rtc.org.component.WebSocketRTCClient;
 import com.pine.rtc.org.lib.VideoFileRenderer;
-import com.pine.rtc.ui.fragment.InterViewFragment;
+import com.pine.rtc.ui.fragment.MyCallFragment;
 import com.pine.rtc.util.DialogUtil;
 
 import org.webrtc.Camera1Enumerator;
@@ -60,11 +60,58 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
-// for purang company
-public class InterViewActivity extends Activity implements AppRTCClient.SignalingEvents,
-        PeerConnectionClient.PeerConnectionEvents, InterViewFragment.OnCallEvents {
+public class MyCallActivity extends Activity implements AppRTCClient.SignalingEvents,
+        PeerConnectionClient.PeerConnectionEvents, MyCallFragment.OnCallEvents {
     public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
-    private static final String TAG = InterViewActivity.class.getSimpleName();
+    public static final String EXTRA_URLPARAMETERS = "org.appspot.apprtc.URLPARAMETERS";
+    public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
+    public static final String EXTRA_VIDEO_CALL = "org.appspot.apprtc.VIDEO_CALL";
+    public static final String EXTRA_SCREENCAPTURE = "org.appspot.apprtc.SCREENCAPTURE";
+    public static final String EXTRA_CAMERA2 = "org.appspot.apprtc.CAMERA2";
+    public static final String EXTRA_VIDEO_WIDTH = "org.appspot.apprtc.VIDEO_WIDTH";
+    public static final String EXTRA_VIDEO_HEIGHT = "org.appspot.apprtc.VIDEO_HEIGHT";
+    public static final String EXTRA_VIDEO_FPS = "org.appspot.apprtc.VIDEO_FPS";
+    public static final String EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED =
+            "org.appsopt.apprtc.VIDEO_CAPTUREQUALITYSLIDER";
+    public static final String EXTRA_VIDEO_BITRATE = "org.appspot.apprtc.VIDEO_BITRATE";
+    public static final String EXTRA_VIDEOCODEC = "org.appspot.apprtc.VIDEOCODEC";
+    public static final String EXTRA_HWCODEC_ENABLED = "org.appspot.apprtc.HWCODEC";
+    public static final String EXTRA_CAPTURETOTEXTURE_ENABLED = "org.appspot.apprtc.CAPTURETOTEXTURE";
+    public static final String EXTRA_FLEXFEC_ENABLED = "org.appspot.apprtc.FLEXFEC";
+    public static final String EXTRA_AUDIO_BITRATE = "org.appspot.apprtc.AUDIO_BITRATE";
+    public static final String EXTRA_AUDIOCODEC = "org.appspot.apprtc.AUDIOCODEC";
+    public static final String EXTRA_NOAUDIOPROCESSING_ENABLED =
+            "org.appspot.apprtc.NOAUDIOPROCESSING";
+    public static final String EXTRA_AECDUMP_ENABLED = "org.appspot.apprtc.AECDUMP";
+    public static final String EXTRA_OPENSLES_ENABLED = "org.appspot.apprtc.OPENSLES";
+    public static final String EXTRA_DISABLE_BUILT_IN_AEC = "org.appspot.apprtc.DISABLE_BUILT_IN_AEC";
+    public static final String EXTRA_DISABLE_BUILT_IN_AGC = "org.appspot.apprtc.DISABLE_BUILT_IN_AGC";
+    public static final String EXTRA_DISABLE_BUILT_IN_NS = "org.appspot.apprtc.DISABLE_BUILT_IN_NS";
+    public static final String EXTRA_ENABLE_LEVEL_CONTROL = "org.appspot.apprtc.ENABLE_LEVEL_CONTROL";
+    public static final String EXTRA_DISABLE_WEBRTC_AGC_AND_HPF =
+            "org.appspot.apprtc.DISABLE_WEBRTC_GAIN_CONTROL";
+    public static final String EXTRA_DISPLAY_HUD = "org.appspot.apprtc.DISPLAY_HUD";
+    public static final String EXTRA_TRACING = "org.appspot.apprtc.TRACING";
+    public static final String EXTRA_CMDLINE = "org.appspot.apprtc.CMDLINE";
+    public static final String EXTRA_RUNTIME = "org.appspot.apprtc.RUNTIME";
+    public static final String EXTRA_VIDEO_FILE_AS_CAMERA = "org.appspot.apprtc.VIDEO_FILE_AS_CAMERA";
+    public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE =
+            "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE";
+    public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_WIDTH =
+            "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_WIDTH";
+    public static final String EXTRA_SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT =
+            "org.appspot.apprtc.SAVE_REMOTE_VIDEO_TO_FILE_HEIGHT";
+    public static final String EXTRA_USE_VALUES_FROM_INTENT =
+            "org.appspot.apprtc.USE_VALUES_FROM_INTENT";
+    public static final String EXTRA_DATA_CHANNEL_ENABLED = "org.appspot.apprtc.DATA_CHANNEL_ENABLED";
+    public static final String EXTRA_ORDERED = "org.appspot.apprtc.ORDERED";
+    public static final String EXTRA_MAX_RETRANSMITS_MS = "org.appspot.apprtc.MAX_RETRANSMITS_MS";
+    public static final String EXTRA_MAX_RETRANSMITS = "org.appspot.apprtc.MAX_RETRANSMITS";
+    public static final String EXTRA_PROTOCOL = "org.appspot.apprtc.PROTOCOL";
+    public static final String EXTRA_NEGOTIATED = "org.appspot.apprtc.NEGOTIATED";
+    public static final String EXTRA_ID = "org.appspot.apprtc.ID";
+
+    private static final String TAG = MyCallActivity.class.getSimpleName();
     // List of mandatory application permissions.
     private static final String[] MANDATORY_PERMISSIONS = {"android.permission.MODIFY_AUDIO_SETTINGS",
             "android.permission.RECORD_AUDIO", "android.permission.INTERNET"};
@@ -76,8 +123,6 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     private final ProxyRenderer mLocalProxyRender = new ProxyRenderer();
     private final List<VideoRenderer.Callbacks> mRemoteRenders =
             new ArrayList<VideoRenderer.Callbacks>();
-    //    MediaRecorderController mMediaRecorderController;
-    MediaRecordController mMediaRecordController;
     private PeerConnectionClient mPeerConnectionClient = null;
     private AppRTCClient mAppRtcClient;
     private AppRTCClient.SignalingParameters mSignalingParameters;
@@ -101,7 +146,9 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     // True if local view is in the fullscreen renderer.
     private boolean mIsSwappedFeeds;
     // Controls
-    private InterViewFragment mInterViewFragment;
+    //    MediaRecorderController mMediaRecorderController;
+    private MediaRecordController mMediaRecordController;
+    private MyCallFragment mMyCallFragment;
     private String mRoomId;
     private boolean mIsRecording;
     private MediaProjection mMediaProjection;
@@ -123,7 +170,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.append(minute < 10 ? ("0" + minute) : minute).append(":")
                             .append(second < 10 ? ("0" + second) : second);
-                    mInterViewFragment.onRecorderTimeTick(stringBuilder.toString());
+                    mMyCallFragment.onRecorderTimeTick(stringBuilder.toString());
                     recordTimeText.setText(mRecordTimeFormat.format(new Date()));
                     sendEmptyMessageDelayed(MSG_TIME_TICK, 500);
                     break;
@@ -139,7 +186,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
-        setContentView(R.layout.activity_inter_view);
+        setContentView(R.layout.activity_my_call);
 
         mIceConnected = false;
         mSignalingParameters = null;
@@ -147,7 +194,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         // Create UI controls.
         pipRendererView = (SurfaceViewRenderer) findViewById(R.id.pip_video_view);
         fullscreenRendererView = (SurfaceViewRenderer) findViewById(R.id.fullscreen_video_view);
-        mInterViewFragment = new InterViewFragment();
+        mMyCallFragment = new MyCallFragment();
 
         recordTimeText = (TextView) findViewById(R.id.record_time_tv);
         mRecordTimeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -216,13 +263,44 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             finish();
             return;
         }
-        DisplayMetrics displayMetrics = getDisplayMetrics();
-        int videoWidth = displayMetrics.widthPixels;
-        int videoHeight = displayMetrics.heightPixels;
+
+        boolean loopback = intent.getBooleanExtra(EXTRA_LOOPBACK, false);
+        boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, false);
+
+        int videoWidth = intent.getIntExtra(EXTRA_VIDEO_WIDTH, 0);
+        int videoHeight = intent.getIntExtra(EXTRA_VIDEO_HEIGHT, 0);
+
+        mScreenCaptureEnabled = intent.getBooleanExtra(EXTRA_SCREENCAPTURE, false);
+        // If capturing format is not specified for screencapture, use screen resolution.
+        if (mScreenCaptureEnabled && videoWidth == 0 && videoHeight == 0) {
+            DisplayMetrics displayMetrics = getDisplayMetrics();
+            videoWidth = displayMetrics.widthPixels;
+            videoHeight = displayMetrics.heightPixels;
+        }
+
+        PeerConnectionClient.DataChannelParameters dataChannelParameters = null;
+        if (intent.getBooleanExtra(EXTRA_DATA_CHANNEL_ENABLED, false)) {
+            dataChannelParameters = new PeerConnectionClient.DataChannelParameters(intent.getBooleanExtra(EXTRA_ORDERED, true),
+                    intent.getIntExtra(EXTRA_MAX_RETRANSMITS_MS, -1),
+                    intent.getIntExtra(EXTRA_MAX_RETRANSMITS, -1), intent.getStringExtra(EXTRA_PROTOCOL),
+                    intent.getBooleanExtra(EXTRA_NEGOTIATED, false), intent.getIntExtra(EXTRA_ID, -1));
+        }
+
         mPeerConnectionParameters =
-                new PeerConnectionClient.PeerConnectionParameters(true, false,
-                        false, videoWidth, videoHeight, 15, 1700, "H264 Baseline", true, false, 32,
-                        "OPUS", false, false, false, false, false, false, false, false, null);
+                new PeerConnectionClient.PeerConnectionParameters(intent.getBooleanExtra(EXTRA_VIDEO_CALL, true), loopback,
+                        tracing, videoWidth, videoHeight, intent.getIntExtra(EXTRA_VIDEO_FPS, 0),
+                        intent.getIntExtra(EXTRA_VIDEO_BITRATE, 0), intent.getStringExtra(EXTRA_VIDEOCODEC),
+                        intent.getBooleanExtra(EXTRA_HWCODEC_ENABLED, true),
+                        intent.getBooleanExtra(EXTRA_FLEXFEC_ENABLED, false),
+                        intent.getIntExtra(EXTRA_AUDIO_BITRATE, 0), intent.getStringExtra(EXTRA_AUDIOCODEC),
+                        intent.getBooleanExtra(EXTRA_NOAUDIOPROCESSING_ENABLED, false),
+                        intent.getBooleanExtra(EXTRA_AECDUMP_ENABLED, false),
+                        intent.getBooleanExtra(EXTRA_OPENSLES_ENABLED, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AEC, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_AGC, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_BUILT_IN_NS, false),
+                        intent.getBooleanExtra(EXTRA_ENABLE_LEVEL_CONTROL, false),
+                        intent.getBooleanExtra(EXTRA_DISABLE_WEBRTC_AGC_AND_HPF, false), dataChannelParameters);
 
         // Create connection client. Use DirectRTCClient if room name is an IP otherwise use the
         // standard WebSocketRTCClient.
@@ -232,20 +310,22 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             Log.i(TAG, "Using DirectRTCClient because room name looks like an IP.");
             mAppRtcClient = new DirectRTCClient(this);
         }
+
+        String urlParameters = intent.getStringExtra(EXTRA_URLPARAMETERS);
         mRoomConnectionParameters =
                 new AppRTCClient.RoomConnectionParameters(getString(R.string.pref_room_server_url_default),
-                        roomUri.toString(), mRoomId, false, null);
+                        roomUri.toString(), mRoomId, false, urlParameters);
 
         // Send intent arguments to fragments.
-        mInterViewFragment.setArguments(intent.getExtras());
+        mMyCallFragment.setArguments(intent.getExtras());
         // Activate call and HUD fragments and start the call.
         FragmentTransaction ft = getFragmentManager().beginTransaction();
-        ft.add(R.id.call_fragment_container, mInterViewFragment);
+        ft.add(R.id.call_fragment_container, mMyCallFragment);
         ft.commit();
 
         mPeerConnectionClient = PeerConnectionClient.getInstance();
         mPeerConnectionClient.createPeerConnectionFactory(
-                getApplicationContext(), mPeerConnectionParameters, InterViewActivity.this);
+                getApplicationContext(), mPeerConnectionParameters, MyCallActivity.this);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             mMediaRecordController = MediaRecordController.getInstance();
             mMediaRecordController.onCreate();
@@ -265,7 +345,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == MEDIA_PROJECTION_REQUEST_CODE) {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 if (resultCode == RESULT_OK && data != null) {
                     if (mMediaProjection == null) {
                         mMediaProjection = ((MediaProjectionManager) getSystemService(
@@ -273,11 +353,11 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     }
                     setupMediaProjectionScreenShot();
                     setupMediaRecordController();
-                    mInterViewFragment.enableSupportButtons(true, true);
+                    mMyCallFragment.enableSupportButtons(true, true);
                     return;
                 }
             }
-            mInterViewFragment.enableSupportButtons(false, false);
+            mMyCallFragment.enableSupportButtons(false, false);
             return;
         }
     }
@@ -289,13 +369,13 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     new MediaProjectionScreenShot.OnShotListener() {
                         @Override
                         public void onFinish(Bitmap bitmap) {
-                            DialogUtil.popShotScreenDialog(InterViewActivity.this, bitmap);
+                            DialogUtil.popShotScreenDialog(MyCallActivity.this, bitmap);
                         }
 
                         @Override
                         public void onSaveFinish(String filePath) {
                             String msg = "截图已经保存在 " + filePath;
-                            Toast.makeText(InterViewActivity.this, msg, Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MyCallActivity.this, msg, Toast.LENGTH_SHORT).show();
                         }
                     }, mMediaProjection);
         }
@@ -315,7 +395,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mInterViewFragment.onRecorderChange(false);
+                            mMyCallFragment.onRecorderChange(false);
                             logAndToast("结束录制，文件已保存在" + mRemoteVideoFilePath);
                         }
                     });
@@ -325,7 +405,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     }
 
     private boolean useCamera2() {
-        return Camera2Enumerator.isSupported(this);
+        return Camera2Enumerator.isSupported(this) && getIntent().getBooleanExtra(EXTRA_CAMERA2, true);
     }
 
     private VideoCapturer createCameraCapturer(CameraEnumerator enumerator) {
@@ -384,9 +464,9 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     @Override
     public void onResume() {
         super.onResume();
-        if (mInterViewFragment != null) {
-            mInterViewFragment.onSpeakerChange(mSpeakerOn);
-            mInterViewFragment.onMuteChange(mMicEnabled);
+        if (mMyCallFragment != null) {
+            mMyCallFragment.onSpeakerChange(mSpeakerOn);
+            mMyCallFragment.onMuteChange(mMicEnabled);
         }
     }
 
@@ -416,6 +496,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             Log.e(TAG, "AppRTC client is not allocated for a call.");
             return;
         }
+        mMyCallFragment.setRtcState(getString(R.string.call_connecting));
         mCallStartedTimeMs = System.currentTimeMillis();
 
         // Start room connection.
@@ -451,6 +532,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         mPeerConnectionClient.enableStatsEvents(true, STAT_CALLBACK_PERIOD);
         setSwappedFeeds(false /* mIsSwappedFeeds */);
         requestMediaProjection();
+        mMyCallFragment.setRtcState(getString(R.string.call_connected));
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -520,8 +602,8 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                 mSpeakerOn = false;
                 break;
         }
-        if (mInterViewFragment != null) {
-            mInterViewFragment.onSpeakerChange(mSpeakerOn);
+        if (mMyCallFragment != null) {
+            mMyCallFragment.onSpeakerChange(mSpeakerOn);
         }
     }
 
@@ -662,7 +744,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
                     ((MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE))
                             .createScreenCaptureIntent(), MEDIA_PROJECTION_REQUEST_CODE);
         } else {
-            Toast.makeText(InterViewActivity.this, "版本过低，截屏录像功能无法实现", Toast.LENGTH_LONG).show();
+            Toast.makeText(MyCallActivity.this, "版本过低，截屏录像功能无法实现", Toast.LENGTH_LONG).show();
             return false;
         }
         return true;
@@ -694,7 +776,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             logAndToast("开始录制");
             mIsRecording = true;
             mMediaRecordController.startRecord(mRemoteVideoFilePath);
-            mInterViewFragment.onRecorderChange(true);
+            mMyCallFragment.onRecorderChange(true);
             mRecordStartTime = System.currentTimeMillis();
             mHandler.sendEmptyMessage(MSG_TIME_TICK);
             recordTimeText.setVisibility(View.VISIBLE);
@@ -707,7 +789,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
             logAndToast("正在结束录制，请等待 ……");
             mIsRecording = false;
             mMediaRecordController.stopRecord();
-            mInterViewFragment.onRecorderChange(false);
+            mMyCallFragment.onRecorderChange(false);
             mHandler.removeMessages(MSG_TIME_TICK);
             recordTimeText.setVisibility(View.GONE);
         }
@@ -751,16 +833,16 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
 
     // Helper functions.
     private void toggleCallControlFragmentVisibility() {
-        if (!mIceConnected || !mInterViewFragment.isAdded()) {
+        if (!mIceConnected || !mMyCallFragment.isAdded()) {
             return;
         }
         // Show/hide call control fragment
         mCallControlFragmentVisible = !mCallControlFragmentVisible;
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         if (mCallControlFragmentVisible) {
-            ft.show(mInterViewFragment);
+            ft.show(mMyCallFragment);
         } else {
-            ft.hide(mInterViewFragment);
+            ft.hide(mMyCallFragment);
         }
         ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE);
         ft.commit();
@@ -808,6 +890,7 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                mMyCallFragment.setRtcState(getString(R.string.call_connecting));
                 onConnectedToRoomInternal(params);
             }
         });
@@ -965,11 +1048,6 @@ public class InterViewActivity extends Activity implements AppRTCClient.Signalin
     @Override
     public void onPeerConnectionError(final String description) {
         reportError(description);
-    }
-
-    @Override
-    public void onPointerCaptureChanged(boolean hasCapture) {
-
     }
 
     // Log |msg| and Toast about it.

@@ -25,7 +25,7 @@ import com.pine.rtc.org.component.CallActivity;
 /**
  * Fragment for call control.
  */
-public class InterViewFragment extends Fragment {
+public class MyCallFragment extends Fragment {
     private View controlView;
     private TextView contactTv;
     private TextView stateTv;
@@ -40,7 +40,7 @@ public class InterViewFragment extends Fragment {
     @Override
     public View onCreateView(
             LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        controlView = inflater.inflate(R.layout.fragment_inter_view, container, false);
+        controlView = inflater.inflate(R.layout.fragment_my_call, container, false);
 
         // Create UI controls.
         contactTv = (TextView) controlView.findViewById(R.id.contact_name_tv);
@@ -96,7 +96,7 @@ public class InterViewFragment extends Fragment {
         Bundle args = getArguments();
         if (args != null) {
             String contactName = args.getString(CallActivity.EXTRA_ROOMID);
-            contactTv.setText(contactName);
+            contactTv.setText(getString(R.string.call_room, contactName));
         }
     }
 
@@ -137,7 +137,7 @@ public class InterViewFragment extends Fragment {
             return;
         }
         recordVideoButton.setSelected(isRecording);
-        recordVideoButton.setText(isRecording ? "" : "录像");
+        recordVideoButton.setText(isRecording ? "" : getString(R.string.call_record));
     }
 
     public void onRecorderTimeTick(String timeTick) {
@@ -159,6 +159,13 @@ public class InterViewFragment extends Fragment {
             return;
         }
         toggleMuteButton.setSelected(!isMicEnable);
+    }
+
+    public void setRtcState(String stateMsg) {
+        if (stateTv == null) {
+            return;
+        }
+        stateTv.setText(stateMsg);
     }
 
     /**
