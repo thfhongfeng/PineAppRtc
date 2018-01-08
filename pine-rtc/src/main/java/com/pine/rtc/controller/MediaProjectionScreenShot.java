@@ -23,6 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by tanghongfeng on 2017/12/1.
@@ -41,6 +44,12 @@ public class MediaProjectionScreenShot {
     private int mWidth;
     private int mHeight;
     private OnShotListener mOnShotListener;
+
+    private static final String FILE_SAVE_DIR;
+
+    static {
+        FILE_SAVE_DIR = Environment.getExternalStorageDirectory().getPath() + "/rtc/";
+    }
 
     public static synchronized MediaProjectionScreenShot getInstance() {
         if (mInstance == null) {
@@ -165,13 +174,13 @@ public class MediaProjectionScreenShot {
         if (bitmap != null) {
             try {
                 if (TextUtils.isEmpty(url)) {
-                    url = Environment.getExternalStorageDirectory().getPath()
-                            + "/rtc/" +
-                            SystemClock.currentThreadTimeMillis() + ".png";
-                }
-                File file = new File(url.substring(0, url.lastIndexOf("/")));
-                if (!file.exists()) {
-                    file.mkdir();
+                    File file = new File(FILE_SAVE_DIR);
+                    if (!file.exists()) {
+                        file.mkdir();
+                    }
+                    Date now = new Date();
+                    DateFormat format = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+                    url = FILE_SAVE_DIR + format.format(now) + ".png";
                 }
                 fileImage = new File(url);
                 if (!fileImage.exists()) {

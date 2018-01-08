@@ -105,6 +105,12 @@ public class MediaRecordController {
 
     private Surface mSurface;
 
+    private static final String FILE_SAVE_DIR;
+
+    static {
+        FILE_SAVE_DIR = Environment.getExternalStorageDirectory().getPath() + "/rtc/";
+    }
+
     private MediaRecordController() {
         DisplayMetrics displayMetrics = Resources.getSystem().getDisplayMetrics();
         mDensityDpi = displayMetrics.densityDpi;
@@ -272,11 +278,11 @@ public class MediaRecordController {
         }
         mDstPath = filePath;
         if (TextUtils.isEmpty(mDstPath)) {
-            File file = new File(Environment.getExternalStorageDirectory().getPath() + "/rtc");
+            File file = new File(FILE_SAVE_DIR);
             if (!file.exists()) {
                 file.mkdir();
             }
-            mDstPath = Environment.getExternalStorageDirectory().getPath() + "/rtc/room.mp4";
+            mDstPath = FILE_SAVE_DIR + "/room.mp4";
         }
         mNanoTime = System.nanoTime();
         mRecorderThreadHandler.post(new Runnable() {

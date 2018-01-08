@@ -7,6 +7,7 @@ import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.media.projection.MediaProjection;
@@ -158,6 +159,12 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
     private TextView recordTimeText;
     private Long mRecordStartTime;
     private DateFormat mRecordTimeFormat;
+
+    private static final String FILE_SAVE_DIR;
+
+    static {
+        FILE_SAVE_DIR = Environment.getExternalStorageDirectory().getPath() + "/rtc/";
+    }
 
     private Handler mHandler = new Handler() {
         @Override
@@ -384,18 +391,24 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setupMediaRecordController() {
         if (mMediaRecordController != null && mMediaProjection != null) {
-            File file = new File(Environment.getExternalStorageDirectory().getPath() + "/rtc");
+            File file = new File(FILE_SAVE_DIR);
             if (!file.exists()) {
                 file.mkdir();
             }
-            mRemoteVideoFilePath = Environment.getExternalStorageDirectory().getPath() + "/rtc/room.mp4";
             mMediaRecordController.setupController(new MediaRecordController.OnRecordListener() {
                 @Override
-                public void onFinish(String filePath) {
+                public void onFinish(final String filePath) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            mMyCallFragment.onRecorderChange(false);
+                            mRemoteVideoFilePath = filePath;
+                            SharedPreferences.Editor editor =
+                                    getSharedPreferences("FilePath", MODE_PRIVATE).edit();
+                            editor.putString("lastVideo", mRemoteVideoFilePath);
+                            editor.commit();
+                            if (mMyCallFragment.isInLayout()) {
+                                mMyCallFragment.onRecorderChange(false);
+                            }
                             logAndToast("结束录制，文件已保存在" + mRemoteVideoFilePath);
                         }
                     });
@@ -775,6 +788,7 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
         if (mMediaRecordController != null) {
             logAndToast("开始录制");
             mIsRecording = true;
+            mRemoteVideoFilePath = FILE_SAVE_DIR + "/room_" + mRoomId + ".mp4";
             mMediaRecordController.startRecord(mRemoteVideoFilePath);
             mMyCallFragment.onRecorderChange(true);
             mRecordStartTime = System.currentTimeMillis();

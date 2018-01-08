@@ -1,11 +1,13 @@
 package com.pine.rtc.ui.activity;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.graphics.SurfaceTexture;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
@@ -36,12 +38,15 @@ public class VideoPlayerActivity extends Activity implements MediaPlayer.OnBuffe
         super.onCreate(savedInstanceState);
         this.requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_video_player);
-        mVideoUrl = Environment.getExternalStorageDirectory().getPath() + "/rtc/room.mp4";
+        SharedPreferences sharedPreferences =
+                getSharedPreferences("FilePath", MODE_PRIVATE);
+        mVideoUrl = sharedPreferences.getString("lastVideo", null);
+        if (TextUtils.isEmpty(mVideoUrl)) {
+            finish();
+            return;
+        }
         mTextureView = (TextureView) findViewById(R.id.surface);
         mTextureView.setSurfaceTextureListener(this);
-//        mTextureView.setRotation(270);
-//        mTextureView.setScaleX(1280f/720);
-//        mTextureView.setScaleY(720f/1280);
     }
 
     private void playVideo(SurfaceTexture surfaceTexture) {
