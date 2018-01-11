@@ -146,8 +146,6 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
     private boolean mScreenCaptureEnabled = false;
     // True if local view is in the fullscreen renderer.
     private boolean mIsSwappedFeeds;
-    // Controls
-    //    MediaRecorderController mMediaRecorderController;
     private MediaRecordController mMediaRecordController;
     private MyCallFragment mMyCallFragment;
     private String mRoomId;
