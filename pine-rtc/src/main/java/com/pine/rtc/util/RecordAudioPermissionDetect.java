@@ -45,6 +45,8 @@ public class RecordAudioPermissionDetect {
     private AudioRecordTask mAudioRecordTask;
     private OnPermitRecordListener mOnPermitRecordListener;
     private boolean isAlertShowing = false;
+    private AlertDialog mAlertDialog;
+
     public RecordAudioPermissionDetect(Context context, OnPermitRecordListener OnPermitRecordListener) {
         mContext = context;
         mIsFilterModel = setIsFilterMode();
@@ -106,44 +108,44 @@ public class RecordAudioPermissionDetect {
         mIsRecord = false;
     }
 
+    public void release() {
+        stopCheck();
+        if (mAlertDialog != null) {
+            mAlertDialog.dismiss();
+        }
+    }
+
     // 显示缺失权限提示
     public void showMissingPermissionDialog(final Context context, int srcMessageId,
                                             final OnPermissionDialogListener listener) {
         if (mIsRecord && !isAlertShowing) {
-            isAlertShowing = true;
-            AlertDialog.Builder builder = new AlertDialog.Builder(context);
-            builder.setTitle(R.string.permission_hint);
-            builder.setMessage(srcMessageId);
-            builder.setPositiveButton(R.string.permission_btn_ok, new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                    isAlertShowing = false;
-                    if (listener != null) {
-                        listener.onConfirm();
-                    }
-                }
-            });
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface dialog) {
-                        isAlertShowing = false;
-                        if (listener != null) {
-                            listener.onCancel();
-                        }
-                    }
-                });
+            if (mAlertDialog != null) {
+                mAlertDialog.dismiss();
+                mAlertDialog = null;
             }
-            builder.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                @Override
-                public void onCancel(DialogInterface dialog) {
-                    isAlertShowing = false;
-                    if (listener != null) {
-                        listener.onCancel();
-                    }
-                }
-            });
-            builder.show();
+            isAlertShowing = true;
+            mAlertDialog = new AlertDialog.Builder(context)
+                    .setTitle(R.string.permission_hint)
+                    .setMessage(srcMessageId)
+                    .setPositiveButton(R.string.permission_btn_ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            isAlertShowing = false;
+                            if (listener != null) {
+                                listener.onConfirm();
+                            }
+                        }
+                    })
+                    .setOnCancelListener(new DialogInterface.OnCancelListener() {
+                        @Override
+                        public void onCancel(DialogInterface dialog) {
+                            isAlertShowing = false;
+                            if (listener != null) {
+                                listener.onCancel();
+                            }
+                        }
+                    }).create();
+            mAlertDialog.show();
         }
     }
 
@@ -177,6 +179,7 @@ public class RecordAudioPermissionDetect {
 
     public interface OnPermissionDialogListener {
         void onConfirm();
+
         void onCancel();
     }
 

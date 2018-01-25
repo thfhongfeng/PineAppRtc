@@ -501,6 +501,7 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
 
     @Override
     protected void onDestroy() {
+        mRecordAudioPermissionDetect.release();
         Thread.setDefaultUncaughtExceptionHandler(null);
         if (mLogToast != null) {
             mLogToast.cancel();
@@ -821,6 +822,11 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void startRecorder() {
+        if (DeviceInfoUtil.getSDAvailableSize() < 1024L * 1024L * 1024L * 8L) {
+            Toast.makeText(MyCallActivity.this, "SD卡空间不足1G，无法录像",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
         if (mMediaRecordController != null) {
             logAndToast("开始录制");
             mIsRecording = true;
