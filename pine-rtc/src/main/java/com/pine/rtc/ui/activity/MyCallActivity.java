@@ -38,7 +38,9 @@ import com.pine.rtc.org.component.UnhandledExceptionHandler;
 import com.pine.rtc.org.component.WebSocketRTCClient;
 import com.pine.rtc.org.lib.VideoFileRenderer;
 import com.pine.rtc.ui.fragment.MyCallFragment;
+import com.pine.rtc.util.DeviceInfoUtil;
 import com.pine.rtc.util.DialogUtil;
+import com.pine.rtc.util.RecordAudioPermissionDetect;
 
 import org.webrtc.Camera1Enumerator;
 import org.webrtc.Camera2Enumerator;
@@ -62,7 +64,8 @@ import java.util.List;
 import java.util.Set;
 
 public class MyCallActivity extends Activity implements AppRTCClient.SignalingEvents,
-        PeerConnectionClient.PeerConnectionEvents, MyCallFragment.OnCallEvents {
+        PeerConnectionClient.PeerConnectionEvents, MyCallFragment.OnCallEvents,
+        RecordAudioPermissionDetect.OnPermitRecordListener {
     public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
     public static final String EXTRA_URLPARAMETERS = "org.appspot.apprtc.URLPARAMETERS";
     public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
@@ -120,6 +123,10 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
     // Peer connection statistics callback period in ms.
     private static final int STAT_CALLBACK_PERIOD = 1000;
     private final int MSG_TIME_TICK = 1;
+
+    public static final String EXTRA_NEED_CHECK_AUDIO_RECORDER = "check_audio_recorder";
+    private RecordAudioPermissionDetect mRecordAudioPermissionDetect;
+
     private final ProxyRenderer mRemoteProxyRender = new ProxyRenderer();
     private final ProxyRenderer mLocalProxyRender = new ProxyRenderer();
     private final List<VideoRenderer.Callbacks> mRemoteRenders =
@@ -195,6 +202,7 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
 
         mIceConnected = false;
         mSignalingParameters = null;
+        mRecordAudioPermissionDetect = new RecordAudioPermissionDetect(this, this);
 
         // Create UI controls.
         pipRendererView = (SurfaceViewRenderer) findViewById(R.id.pip_video_view);
@@ -450,6 +458,12 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
         return null;
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mRecordAudioPermissionDetect.stopCheck();
+    }
+
     // Activity interfaces
     @Override
     public void onStop() {
@@ -475,6 +489,10 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
     @Override
     public void onResume() {
         super.onResume();
+        if (DeviceInfoUtil.isXiaoMi() &&
+                getIntent().getBooleanExtra(EXTRA_NEED_CHECK_AUDIO_RECORDER, true)) {
+            mRecordAudioPermissionDetect.startCheckRecordPermission();
+        }
         if (mMyCallFragment != null) {
             mMyCallFragment.onSpeakerChange(mSpeakerOn);
             mMyCallFragment.onMuteChange(mMicEnabled);
@@ -500,6 +518,26 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
         }
         mHandler.removeMessages(MSG_TIME_TICK);
         super.onDestroy();
+    }
+
+    @Override
+    public void isPermit(final boolean flag) {
+        Log.e(TAG,"-------isPermit:" + flag);
+        if (!flag) { //表示权限不允许，提示用户
+            mRecordAudioPermissionDetect.showMissingPermissionDialog(
+                    this, R.string.permission_string_help_text,
+                    new RecordAudioPermissionDetect.OnPermissionDialogListener() {
+                        @Override
+                        public void onConfirm() {
+                            finish();
+                        }
+
+                        @Override
+                        public void onCancel() {
+                            finish();
+                        }
+                    });
+        }
     }
 
     private void startCall() {
