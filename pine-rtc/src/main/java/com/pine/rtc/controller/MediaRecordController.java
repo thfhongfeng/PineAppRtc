@@ -278,11 +278,11 @@ public class MediaRecordController {
         }
         mDstPath = filePath;
         if (TextUtils.isEmpty(mDstPath)) {
-            File file = new File(FILE_SAVE_DIR);
-            if (!file.exists()) {
-                file.mkdir();
-            }
             mDstPath = FILE_SAVE_DIR + "/room.mp4";
+        }
+        File file = new File(mDstPath);
+        if (!file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
         }
         mNanoTime = System.nanoTime();
         mRecorderThreadHandler.post(new Runnable() {

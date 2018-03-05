@@ -174,15 +174,14 @@ public class MediaProjectionScreenShot {
         if (bitmap != null) {
             try {
                 if (TextUtils.isEmpty(url)) {
-                    File file = new File(FILE_SAVE_DIR);
-                    if (!file.exists()) {
-                        file.mkdir();
-                    }
                     Date now = new Date();
                     DateFormat format = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
                     url = FILE_SAVE_DIR + format.format(now) + ".png";
                 }
                 fileImage = new File(url);
+                if (!fileImage.getParentFile().exists()) {
+                    fileImage.getParentFile().mkdirs();
+                }
                 if (!fileImage.exists()) {
                     fileImage.createNewFile();
                 }

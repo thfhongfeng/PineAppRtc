@@ -364,6 +364,10 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
                         mMediaProjection = ((MediaProjectionManager) getSystemService(
                                 Context.MEDIA_PROJECTION_SERVICE)).getMediaProjection(resultCode, data);
                     }
+                    File file = new File(FILE_SAVE_DIR + "/" + mRoomId);
+                    if (!file.exists()) {
+                        file.mkdirs();
+                    }
                     setupMediaProjectionScreenShot();
                     setupMediaRecordController();
                     mMyCallFragment.enableSupportButtons(true, true);
@@ -397,10 +401,6 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setupMediaRecordController() {
         if (mMediaRecordController != null && mMediaProjection != null) {
-            File file = new File(FILE_SAVE_DIR);
-            if (!file.exists()) {
-                file.mkdir();
-            }
             mMediaRecordController.setupController(new MediaRecordController.OnRecordListener() {
                 @Override
                 public void onFinish(final String filePath) {
