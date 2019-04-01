@@ -8,7 +8,6 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
 
 import org.webrtc.EglRenderer;
@@ -46,7 +45,8 @@ public class EglRenderScreenShot {
                         if (mOnShotListener != null) {
                             mOnShotListener.onScreenShot(bitmap);
                         }
-                        AsyncTaskCompat.executeParallel(new SaveTask(), bitmap);
+                        AsyncTask task = new SaveTask();
+                        task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, bitmap);
                     }
                 }
             });
@@ -149,6 +149,7 @@ public class EglRenderScreenShot {
 
     public static interface OnShotListener {
         void onScreenShot(Bitmap bitmap);
+
         void onScreenShotSave(String filePath);
     }
 }

@@ -13,8 +13,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.SystemClock;
-import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 
@@ -70,7 +68,7 @@ public class MediaProjectionScreenShot {
     }
 
     public MediaProjectionScreenShot setupScreenShot(OnShotListener onShotListener, MediaProjection mp,
-                                int densityDpi, int width, int height) {
+                                                     int densityDpi, int width, int height) {
         mMediaProjection = mp;
         mOnShotListener = onShotListener;
         mDensityDpi = densityDpi;
@@ -122,7 +120,8 @@ public class MediaProjectionScreenShot {
                 if (mOnShotListener != null) {
                     mOnShotListener.onFinish(bitmap);
                 }
-                AsyncTaskCompat.executeParallel(new SaveTask(), bitmap);
+                AsyncTask task = new SaveTask();
+                task.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, bitmap);
             }
         }, 50);
     }
@@ -140,6 +139,7 @@ public class MediaProjectionScreenShot {
     // call back listener
     public interface OnShotListener {
         void onFinish(Bitmap bitmap);
+
         void onSaveFinish(String filePath);
     }
 

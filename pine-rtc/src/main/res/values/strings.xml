@@ -213,4 +213,19 @@
     <string name="pref_tracing_title">Debug performance tracing.</string>
     <string name="pref_tracing_dlg">Debug performance tracing.</string>
     <string name="pref_tracing_default" translatable="false">false</string>
+
+    <string name="permission_string_help_text">麦克风没有声音了，对方无法听到你的声音哦，可能是录音权限被禁用，请检查打开相应权限，并尝试重播。</string>
+    <string name="permission_btn_quit">退出</string>
+    <string name="permission_missing">权限未开启，无法使用</string>
+    <string name="permission_hint">权限提示</string>
+    <string name="permission_btn_ok">我知道了</string>
+
+    <string name="call_room">房间：%1$s</string>
+    <string name="call_record">录像</string>
+    <string name="call_capture_screen">截屏</string>
+    <string name="call_mic_mute">静音</string>
+    <string name="call_speaker">扬声器</string>
+
+    <string name="call_connecting">正在连接中……</string>
+    <string name="call_connected">正在通话中</string>
 </resources>
