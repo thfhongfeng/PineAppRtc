@@ -1,1 +1,1 @@
-include ':app', ':pine-rtc'
+include ':app', ':pine_rtc'
