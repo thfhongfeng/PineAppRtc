@@ -23,7 +23,7 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name">
         <activity
-            android:name="com.pine.rtc.org.component.ConnectActivity"
+            android:name=".LoadingActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustPan">

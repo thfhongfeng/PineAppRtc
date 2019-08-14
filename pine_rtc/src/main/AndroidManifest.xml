@@ -25,21 +25,7 @@
             android:name=".org.component.ConnectActivity"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="10.1.110.22"
-                    android:scheme="https" />
-                <data
-                    android:host="10.1.110.22"
-                    android:scheme="http" />
-            </intent-filter>
-        </activity>
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".org.component.SettingsActivity"
             android:label="@string/settings_name"
