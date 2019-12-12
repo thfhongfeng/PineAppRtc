@@ -263,11 +263,11 @@ public class CpuMonitor {
 
         mActualCpusPresent = 0;
         for (int i = 0; i < mCpusPresent; i++) {
-      /*
-       * For each CPU, attempt to first read its max frequency, then its
-       * current frequency.  Once as the max frequency for a CPU is found,
-       * save it in mCpuFreqMax[].
-       */
+            /*
+             * For each CPU, attempt to first read its max frequency, then its
+             * current frequency.  Once as the max frequency for a CPU is found,
+             * save it in mCpuFreqMax[].
+             */
 
             mCurFreqScales[i] = 0;
             if (mCpuFreqMax[i] == 0) {
@@ -293,12 +293,12 @@ public class CpuMonitor {
             }
             cpuFreqCurSum += cpuFreqCur;
 
-      /* Here, lastSeenMaxFreq might come from
-       * 1. cpuFreq[i], or
-       * 2. a previous iteration, or
-       * 3. a newly read value, or
-       * 4. hypothetically from the pre-loop dummy.
-       */
+            /* Here, lastSeenMaxFreq might come from
+             * 1. cpuFreq[i], or
+             * 2. a previous iteration, or
+             * 3. a newly read value, or
+             * 4. hypothetically from the pre-loop dummy.
+             */
             cpuFreqMaxSum += lastSeenMaxFreq;
             if (lastSeenMaxFreq > 0) {
                 mCurFreqScales[i] = (double) cpuFreqCur / lastSeenMaxFreq;
@@ -310,13 +310,13 @@ public class CpuMonitor {
             return false;
         }
 
-    /*
-     * Since the cycle counts are for the period between the last invocation
-     * and this present one, we average the percentual CPU frequencies between
-     * now and the beginning of the measurement period.  This is significantly
-     * incorrect only if the frequencies have peeked or dropped in between the
-     * invocations.
-     */
+        /*
+         * Since the cycle counts are for the period between the last invocation
+         * and this present one, we average the percentual CPU frequencies between
+         * now and the beginning of the measurement period.  This is significantly
+         * incorrect only if the frequencies have peeked or dropped in between the
+         * invocations.
+         */
         double currentFrequencyScale = cpuFreqCurSum / (double) cpuFreqMaxSum;
         if (mFrequencyScale.getCurrent() > 0) {
             currentFrequencyScale = (mFrequencyScale.getCurrent() + currentFrequencyScale) * 0.5;

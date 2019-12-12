@@ -9,8 +9,8 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 
-import com.pine.rtc.util.MediaCodecVideoEncoderUtil;
 import com.pine.rtc.org.component.PeerConnectionClient;
+import com.pine.rtc.util.MediaCodecVideoEncoderUtil;
 
 import org.webrtc.EglBase;
 import org.webrtc.Logging;
@@ -30,7 +30,9 @@ import static org.webrtc.VideoFileRenderer.nativeI420Scale;
  * Created by tanghongfeng on 2017/11/22.
  */
 
-/** Test Class (not correct) **/
+/**
+ * Test Class (not correct)
+ **/
 @TargetApi(Build.VERSION_CODES.KITKAT)
 public class VideoFileRenderer implements VideoRenderer.Callbacks {
     private static final String TAG = "VideoFileRenderer";
@@ -341,7 +343,7 @@ public class VideoFileRenderer implements VideoRenderer.Callbacks {
                         onRecorderError();
                     }
                     Logging.d(TAG, "Error when stop record: " + e);
-                }  finally {
+                } finally {
                     mRenderThreadHandler.getLooper().quit();
                     mYuvConverter.release();
                     mEglBase.release();

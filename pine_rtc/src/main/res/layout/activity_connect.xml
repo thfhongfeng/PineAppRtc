@@ -81,5 +81,5 @@
         android:layout_gravity="center"
         android:layout_margin="30dp"
         android:padding="10dp"
-        android:text="Play"/>
+        android:text="Play" />
 </LinearLayout>

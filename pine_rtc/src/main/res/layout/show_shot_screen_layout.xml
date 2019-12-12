@@ -7,6 +7,6 @@
     <ImageView
         android:id="@+id/show_cut_screen_img"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent" />
 
 </RelativeLayout>

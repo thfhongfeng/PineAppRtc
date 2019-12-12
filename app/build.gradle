@@ -1,17 +1,29 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
-    buildToolsVersion "28.0.3"
+    compileSdkVersion build_versions.compileSdkVersion
+    buildToolsVersion build_versions.buildToolsVersion
+
+    signingConfigs {
+        release {
+            storeFile file(build_versions.storeFile)
+            storePassword build_versions.storePassword
+            keyAlias build_versions.keyAlias
+            keyPassword build_versions.keyPassword
+        }
+    }
 
     defaultConfig {
-        applicationId "com.pine.rtc"
-        minSdkVersion 19
-        targetSdkVersion 28
-        versionCode 1
-        versionName "1.0"
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        minSdkVersion build_versions.minSdkVersion
+        targetSdkVersion build_versions.targetSdkVersion
+
+        applicationId build_versions.applicationId
+        versionCode build_versions.versionCode
+        versionName build_versions.versionName
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -21,7 +33,11 @@ android {
 }
 
 dependencies {
-    implementation 'com.android.support:appcompat-v7:28.+'
-    implementation 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // android官方 dependency begin
+    implementation build_dependency["android_appcompat"]
+    implementation build_dependency["android_constraint_layout"]
+    // android官方 dependency end
     api project(':pine_rtc')
 }

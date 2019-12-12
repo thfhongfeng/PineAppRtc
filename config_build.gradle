@@ -1,0 +1,41 @@
+/**
+ * 编译打包参数
+ */
+def build_versions = [:]
+build_versions.compileSdkVersion = 28
+build_versions.buildToolsVersion = "28.0.3"
+build_versions.minSdkVersion = 21
+build_versions.targetSdkVersion = 28
+build_versions.targetSdkVersion = 28
+
+build_versions.applicationId = "com.pine.rtcdemo"
+build_versions.versionCode = 1
+build_versions.versionName = "1.0.0"
+
+build_versions.apkHeadName = "pine_app_rtc"
+
+build_versions.storeFile = "../pineAppRtc.jks"
+build_versions.storePassword = "pine123"
+build_versions.keyAlias = "PineAppRtc"
+build_versions.keyPassword = "pine123"
+
+ext.build_versions = build_versions
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * 通用依赖
+ */
+def build_dependency = [
+        // android官方 dependency
+        "android_appcompat"           : 'androidx.appcompat:appcompat:1.0.0',
+        "android_support_design"      : 'com.google.android.material:material:1.0.0',
+        "android_constraint_layout"   : 'androidx.constraintlayout:constraintlayout:1.1.3',
+
+        // 测试 dependency
+        "test_espresso_core"          : 'androidx.test.espresso:espresso-core:3.1.0',
+        "test_junit"                  : 'junit:junit:4.12'
+]
+ext.build_dependency = build_dependency

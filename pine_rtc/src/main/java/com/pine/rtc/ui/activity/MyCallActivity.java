@@ -18,7 +18,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.RequiresApi;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -26,6 +25,8 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 
 import com.pine.rtc.R;
 import com.pine.rtc.controller.MediaProjectionScreenShot;
@@ -523,7 +524,7 @@ public class MyCallActivity extends Activity implements AppRTCClient.SignalingEv
 
     @Override
     public void isPermit(final boolean flag) {
-        Log.e(TAG,"-------isPermit:" + flag);
+        Log.e(TAG, "-------isPermit:" + flag);
         if (!flag) { //表示权限不允许，提示用户
             mRecordAudioPermissionDetect.showMissingPermissionDialog(
                     this, R.string.permission_string_help_text,

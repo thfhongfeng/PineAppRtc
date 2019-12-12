@@ -88,7 +88,9 @@ public class YuvConverter {
         }
     }
 
-    /** Test Code (not correct) begin **/
+    /**
+     * Test Code (not correct) begin
+     **/
 
     public void yuvRotate90(ByteBuffer srcBuffer, ByteBuffer desBuffer, int width, int height) {
         int size = width * height;
@@ -146,7 +148,9 @@ public class YuvConverter {
         desBuffer.rewind();
     }
 
-    /** Test Code (not correct) end **/
+    /**
+     * Test Code (not correct) end
+     **/
 
     public void release() {
         this.mThreadChecker.checkIsOnValidThread();
